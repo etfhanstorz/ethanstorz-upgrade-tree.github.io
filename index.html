@@ -406,6 +406,69 @@
       }
     }
 
+    // ---- Roblox-style trees ----
+    function makeTree(x, z, floorY, scale) {
+      scale = scale || 1;
+      const group = new THREE.Group();
+      group.position.set(x, floorY, z);
+
+      // Trunk — brown box with studs
+      const trunkH = 0.7 * scale;
+      const trunkW = 0.22 * scale;
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.9 });
+      const trunk = new THREE.Mesh(new THREE.BoxGeometry(trunkW, trunkH, trunkW), trunkMat);
+      trunk.position.y = trunkH / 2;
+      trunk.castShadow = true;
+      group.add(trunk);
+
+      // Foliage — 2-3 stacked green boxes, getting smaller toward top
+      const leafMat = new THREE.MeshStandardMaterial({ color: 0x2d8a2d, roughness: 0.8 });
+      const darkLeafMat = new THREE.MeshStandardMaterial({ color: 0x1f6b1f, roughness: 0.8 });
+      const studMat = new THREE.MeshStandardMaterial({ color: 0x3aaa3a, roughness: 0.7 });
+      const studGeo = new THREE.CylinderGeometry(0.06 * scale, 0.06 * scale, 0.05 * scale, 10);
+
+      const layers = [
+        { w: 0.82 * scale, h: 0.28 * scale, y: trunkH + 0.14 * scale, mat: leafMat,     studs: 3 },
+        { w: 0.62 * scale, h: 0.26 * scale, y: trunkH + 0.38 * scale, mat: darkLeafMat, studs: 2 },
+        { w: 0.42 * scale, h: 0.24 * scale, y: trunkH + 0.60 * scale, mat: leafMat,     studs: 1 },
+      ];
+
+      layers.forEach(l => {
+        const box = new THREE.Mesh(new THREE.BoxGeometry(l.w, l.h, l.w), l.mat);
+        box.position.y = l.y;
+        box.castShadow = true;
+        group.add(box);
+        // Studs on top of each layer
+        for (let sx = -l.studs + 1; sx <= l.studs - 1; sx += 2) {
+          for (let sz = -l.studs + 1; sz <= l.studs - 1; sz += 2) {
+            const stud = new THREE.Mesh(studGeo, studMat);
+            stud.position.set(sx * 0.18 * scale, l.y + l.h / 2 + 0.025 * scale, sz * 0.18 * scale);
+            group.add(stud);
+          }
+        }
+      });
+
+      scene.add(group);
+      return group;
+    }
+
+    // Scatter trees on floor 0 — avoid the upgrade tree area (z < 0) and centre
+    const treePositions = [
+      [-8, 4], [-12, 0], [-9, -8], [-6, -14], [0, -16], [6, -14],
+      [10, -8], [12, 0],  [9, 4],   [14, 8],   [-14, 8],
+      [-16, -4], [16, -4], [-4, -18], [4, -18], [0, 8],
+      [-10, 12], [10, 12], [-18, 12], [18, 12],
+    ];
+    treePositions.forEach(([x, z]) => {
+      const scale = 0.8 + Math.random() * 0.7;
+      makeTree(x + (Math.random() - 0.5) * 1.5, z + (Math.random() - 0.5) * 1.5, 0, scale);
+    });
+
+    // A few smaller trees on floor 1 (blue platform)
+    [[-6, -5], [6, -5], [-6, -15], [6, -15], [0, -18]].forEach(([x, z]) => {
+      makeTree(x, z, 7, 0.6 + Math.random() * 0.4);
+    });
+
     // ---- Floor 1 & 2 platforms + teleporter pads ----
     function makeFloorPlatform(y, color) {
       const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
