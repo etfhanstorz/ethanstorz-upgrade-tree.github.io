@@ -483,16 +483,18 @@
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x4a9d4a, roughness: 0.8, metalness: 0.05 });
 
     // Load grass texture if available
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load('grass.png', (texture) => {
-      texture.repeat.set(8, 8);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      floorMat.map = texture;
-      floorMat.needsUpdate = true;
-    }, undefined, (err) => {
-      console.log('grass.png not found, using solid color');
-    });
+    new THREE.TextureLoader().load(
+      'grass.png',
+      (texture) => {
+        texture.repeat.set(8, 8);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        floorMat.map = texture;
+        floorMat.needsUpdate = true;
+      },
+      undefined,
+      () => console.log('grass.png not found, using solid color')
+    );
 
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
