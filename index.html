@@ -89,9 +89,9 @@
     <div class="sb-stat"><div class="label">Rebirths</div><div class="val" id="s-reb">0</div></div>
     <div class="sb-divider"></div>
     <h2>Ascend</h2>
-    <button class="sb-btn prestige" id="btn-prestige" disabled>⭐ Prestige</button>
+    <button class="sb-btn prestige" id="btn-prestige" onclick="doPrestige()" disabled>⭐ Prestige</button>
     <div class="sb-note" id="pres-req">Earn c$10K total to unlock</div>
-    <button class="sb-btn rebirth"  id="btn-rebirth"  disabled>🔥 Rebirth</button>
+    <button class="sb-btn rebirth"  id="btn-rebirth"  onclick="doRebirth()"  disabled>🔥 Rebirth</button>
     <div class="sb-note" id="reb-req">Need 5 Prestiges</div>
     <div class="sb-divider"></div>
     <button class="sb-btn save" onclick="saveGame()">💾 Save</button>
@@ -1188,7 +1188,13 @@
         { b: vrPrestigeBrick, fn: () => { doPrestige(); vrPrestigeBrick.group.scale.setScalar(1.2); } },
         { b: vrRebirthBrick,  fn: () => { doRebirth();  vrRebirthBrick.group.scale.setScalar(1.2); } },
       { b: vrResetBrick,    fn: () => {
-          if (confirm('Reset ALL data?')) {
+          // Double-trigger to confirm: first press arms it, second press fires
+          if (!vrResetBrick._armed) {
+            vrResetBrick._armed = true;
+            vrResetBrick._armTimer = setTimeout(() => { vrResetBrick._armed = false; }, 3000);
+          } else {
+            clearTimeout(vrResetBrick._armTimer);
+            vrResetBrick._armed = false;
             localStorage.removeItem('brickclicker');
             location.reload();
           }
