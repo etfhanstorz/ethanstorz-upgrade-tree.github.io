@@ -447,8 +447,8 @@
     });
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0d0d1a);
-    scene.fog = new THREE.FogExp2(0x0d0d1a, 0.045);
+    scene.background = new THREE.Color(0x1a2a4a);
+    scene.fog = new THREE.FogExp2(0x1a2a4a, 0.025);
 
     const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.01, 80);
     camera.position.set(0, 1.6, 0);
@@ -459,25 +459,26 @@
     scene.add(player);
 
     // ---- Lights ----
-    scene.add(new THREE.AmbientLight(0x223366, 2));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-    sun.position.set(4, 8, 2); sun.castShadow = true;
+    scene.add(new THREE.AmbientLight(0x6699dd, 3.2));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.8);
+    sun.position.set(8, 12, 4); sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.far = 60;
     scene.add(sun);
-    scene.add(new THREE.PointLight(0x4488ff, 1, 12, 2));
+    scene.add(new THREE.PointLight(0x6699ff, 2.2, 20, 2));
+    scene.add(new THREE.PointLight(0xffcc88, 1.5, 15, 1));
 
     // ---- Floor (large studded plate) ----
     const floorGeo = new THREE.PlaneGeometry(40, 40);
     const floor = new THREE.Mesh(floorGeo,
-      new THREE.MeshStandardMaterial({ color: 0x2d6a2d, roughness: 0.9 }));
+      new THREE.MeshStandardMaterial({ color: 0x4a9d4a, roughness: 0.8, metalness: 0.05 }));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Subtle stud grid on floor
+    // Bright stud grid on floor
     const studFloorGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12);
-    const studFloorMat = new THREE.MeshStandardMaterial({ color: 0x3a7a3a, roughness: 0.8 });
+    const studFloorMat = new THREE.MeshStandardMaterial({ color: 0x5bb35b, roughness: 0.7, metalness: 0.1 });
     for (let x = -18; x <= 18; x += 1.2) {
       for (let z = -18; z <= 18; z += 1.2) {
         const s = new THREE.Mesh(studFloorGeo, studFloorMat);
@@ -487,11 +488,41 @@
       }
     }
 
+    // ---- GRASS BLADES ----
+    function makeGrassBlades() {
+      const grassMat = new THREE.MeshStandardMaterial({
+        color: 0x3dd84d,
+        roughness: 0.6,
+        metalness: 0,
+        side: THREE.DoubleSide
+      });
+      const grassGeo = new THREE.PlaneGeometry(0.08, 0.4);
+
+      for (let i = 0; i < 400; i++) {
+        const x = (Math.random() - 0.5) * 40;
+        const z = (Math.random() - 0.5) * 40;
+        const grass = new THREE.Mesh(grassGeo, grassMat);
+        grass.position.set(x, 0.2, z);
+        grass.rotation.x = (Math.random() - 0.5) * 0.3;
+        grass.rotation.z = Math.random() * Math.PI;
+        grass.scale.y = 0.7 + Math.random() * 0.6;
+        grass.receiveShadow = true;
+        scene.add(grass);
+      }
+    }
+    makeGrassBlades();
+
     // ---- MOUNTAIN TERRAIN ----
     function makeMountain() {
       // Cone-like mountain for prestige/rebirth branches to climb
       const mountainGeo = new THREE.ConeGeometry(12, 14, 32, 32);
-      const mountainMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.95 });
+      const mountainMat = new THREE.MeshStandardMaterial({
+        color: 0x6b7280,
+        roughness: 0.85,
+        metalness: 0.05,
+        emissive: 0x333333,
+        emissiveIntensity: 0.2
+      });
       const mountain = new THREE.Mesh(mountainGeo, mountainMat);
       mountain.position.set(0, 7, -16);
       mountain.scale.z = 2.5; // stretched along z for the slope
@@ -511,16 +542,36 @@
       // Trunk — brown box with studs
       const trunkH = 0.7 * scale;
       const trunkW = 0.22 * scale;
-      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.9 });
+      const trunkMat = new THREE.MeshStandardMaterial({
+        color: 0xa0622d,
+        roughness: 0.8,
+        metalness: 0.02
+      });
       const trunk = new THREE.Mesh(new THREE.BoxGeometry(trunkW, trunkH, trunkW), trunkMat);
       trunk.position.y = trunkH / 2;
       trunk.castShadow = true;
       group.add(trunk);
 
       // Foliage — 2-3 stacked green boxes, getting smaller toward top
-      const leafMat = new THREE.MeshStandardMaterial({ color: 0x2d8a2d, roughness: 0.8 });
-      const darkLeafMat = new THREE.MeshStandardMaterial({ color: 0x1f6b1f, roughness: 0.8 });
-      const studMat = new THREE.MeshStandardMaterial({ color: 0x3aaa3a, roughness: 0.7 });
+      const leafMat = new THREE.MeshStandardMaterial({
+        color: 0x4dbb4d,
+        roughness: 0.6,
+        metalness: 0.05,
+        emissive: 0x2d8a2d,
+        emissiveIntensity: 0.15
+      });
+      const darkLeafMat = new THREE.MeshStandardMaterial({
+        color: 0x3aaa3a,
+        roughness: 0.65,
+        metalness: 0.05,
+        emissive: 0x1f6b1f,
+        emissiveIntensity: 0.1
+      });
+      const studMat = new THREE.MeshStandardMaterial({
+        color: 0x5bcc5b,
+        roughness: 0.5,
+        metalness: 0.1
+      });
       const studGeo = new THREE.CylinderGeometry(0.06 * scale, 0.06 * scale, 0.05 * scale, 10);
 
       const layers = [
@@ -566,31 +617,48 @@
     });
 
     // ---- Floor 1 & 2 platforms + teleporter pads ----
-    function makeFloorPlatform(y, color) {
-      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+    function makeFloorPlatform(y, color, brightColor) {
+      const mat = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.8,
+        metalness: 0.1,
+        emissive: new THREE.Color(color).multiplyScalar(0.4),
+        emissiveIntensity: 0.2
+      });
       const fl = new THREE.Mesh(new THREE.BoxGeometry(40, 0.4, 40), mat);
       fl.position.set(0, y - 0.2, -10);
       fl.receiveShadow = true;
       scene.add(fl);
       // Stud grid
       const sg = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12);
-      const sm = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).offsetHSL(0, 0, 0.05), roughness: 0.8 });
+      const sm = new THREE.MeshStandardMaterial({
+        color: brightColor,
+        roughness: 0.6,
+        metalness: 0.15
+      });
       for (let x = -18; x <= 18; x += 1.2) for (let z = -30; z <= 10; z += 1.2) {
         const s = new THREE.Mesh(sg, sm);
         s.position.set(x, y + 0.025, z);
         scene.add(s);
       }
     }
-    makeFloorPlatform(7,  0x1a3a6a); // Floor 1 — blue
-    makeFloorPlatform(14, 0x3a1a5a); // Floor 2 — purple
+    makeFloorPlatform(7,  0x2a5a9a, 0x5a8ace); // Floor 1 — blue
+    makeFloorPlatform(14, 0x5a3a7a, 0x9a6aaa); // Floor 2 — purple
 
     // Teleporter pads — glow bricks that move player between floors
     const teleporters = [];
     function makeTeleporter(x, fromY, toY, label, color) {
       const geo = new THREE.BoxGeometry(0.6, 0.1, 0.6);
-      const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6 });
+      const mat = new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: 0.9,
+        roughness: 0.2,
+        metalness: 0.3
+      });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(x, fromY + 0.05, 3);
+      mesh.castShadow = true;
       scene.add(mesh);
       // Label
       const c = document.createElement('canvas'); c.width = 256; c.height = 64;
@@ -624,7 +692,13 @@
       const sc = small ? 0.55 : 1;
       const w = cols * UNIT * sc, d = rows * UNIT * sc, h = BRICK_H * sc;
       const group = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({ color, roughness: .3, metalness: .05 });
+      const mat = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.25,
+        metalness: 0.15,
+        emissive: new THREE.Color(color).multiplyScalar(0.3),
+        emissiveIntensity: 0.3
+      });
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
       body.castShadow = true; body.receiveShadow = true;
       group.add(body);
