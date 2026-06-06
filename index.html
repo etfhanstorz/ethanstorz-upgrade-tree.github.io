@@ -478,10 +478,18 @@
     scene.add(new THREE.PointLight(0x6699ff, 2.2, 20, 2));
     scene.add(new THREE.PointLight(0xffcc88, 1.5, 15, 1));
 
-    // ---- Floor (large studded plate) ----
+    // ---- Floor (large studded plate with grass texture) ----
+    const textureLoader = new THREE.TextureLoader();
+    let floorMat = new THREE.MeshStandardMaterial({ color: 0x4a9d4a, roughness: 0.8, metalness: 0.05 });
+    textureLoader.load('grass.png', (texture) => {
+      texture.repeat.set(8, 8);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      floorMat.map = texture;
+      floorMat.needsUpdate = true;
+    }).catch(() => {}); // fallback to color if texture fails
     const floorGeo = new THREE.PlaneGeometry(40, 40);
-    const floor = new THREE.Mesh(floorGeo,
-      new THREE.MeshStandardMaterial({ color: 0x4a9d4a, roughness: 0.8, metalness: 0.05 }));
+    const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
@@ -498,48 +506,44 @@
       }
     }
 
-    // ---- GRASS BLADES ----
-    function makeGrassBlades() {
-      const grassMat = new THREE.MeshStandardMaterial({
-        color: 0x3dd84d,
-        roughness: 0.6,
-        metalness: 0,
-        side: THREE.DoubleSide
-      });
-      const grassGeo = new THREE.PlaneGeometry(0.08, 0.4);
 
-      for (let i = 0; i < 400; i++) {
-        const x = (Math.random() - 0.5) * 40;
-        const z = (Math.random() - 0.5) * 40;
-        const grass = new THREE.Mesh(grassGeo, grassMat);
-        grass.position.set(x, 0.2, z);
-        grass.rotation.x = (Math.random() - 0.5) * 0.3;
-        grass.rotation.z = Math.random() * Math.PI;
-        grass.scale.y = 0.7 + Math.random() * 0.6;
-        grass.receiveShadow = true;
-        scene.add(grass);
-      }
-    }
-    makeGrassBlades();
-
-    // ---- MOUNTAIN TERRAIN ----
+    // ---- MOUNTAIN TERRAIN — Blocky Roblox-style mountain ----
     function makeMountain() {
-      // Cone-like mountain for prestige/rebirth branches to climb
-      const mountainGeo = new THREE.ConeGeometry(12, 14, 32, 32);
+      const mountainGroup = new THREE.Group();
+      const blockSize = 1.2;
       const mountainMat = new THREE.MeshStandardMaterial({
-        color: 0x6b7280,
-        roughness: 0.85,
+        color: 0x7a8a8a,
+        roughness: 0.8,
         metalness: 0.05,
-        emissive: 0x333333,
-        emissiveIntensity: 0.2
+        emissive: 0x444444,
+        emissiveIntensity: 0.15
       });
-      const mountain = new THREE.Mesh(mountainGeo, mountainMat);
-      mountain.position.set(0, 7, -16);
-      mountain.scale.z = 2.5; // stretched along z for the slope
-      mountain.castShadow = true;
-      mountain.receiveShadow = true;
-      scene.add(mountain);
-      return mountain;
+
+      // Create stepped mountain: wider at base, narrower at top
+      const levels = [
+        { width: 16, depth: 8, y: 0, count: 16 },
+        { width: 14, depth: 7, y: 1.2, count: 14 },
+        { width: 12, depth: 6, y: 2.4, count: 12 },
+        { width: 10, depth: 5, y: 3.6, count: 10 },
+        { width: 8, depth: 4, y: 4.8, count: 8 },
+        { width: 6, depth: 3, y: 6.0, count: 6 },
+        { width: 4, depth: 2, y: 7.2, count: 4 },
+        { width: 2, depth: 1, y: 8.4, count: 2 },
+      ];
+
+      levels.forEach(level => {
+        for (let x = -level.count / 2; x < level.count / 2; x++) {
+          const blockGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+          const block = new THREE.Mesh(blockGeo, mountainMat);
+          block.position.set(x * blockSize, level.y, -16 + (level.depth / 2) * blockSize);
+          block.castShadow = true;
+          block.receiveShadow = true;
+          mountainGroup.add(block);
+        }
+      });
+
+      scene.add(mountainGroup);
+      return mountainGroup;
     }
     makeMountain();
 
