@@ -1196,17 +1196,29 @@
       // Idle brick rotation when not in VR
       if (!renderer.xr.isPresenting && brickGroup) brickGroup.rotation.y += dt * 0.5;
 
-      // Teleporter pads — step on to travel between floors
+      // Teleporter pads — step on to travel between floors (3s cooldown)
       const px = player.position.x, pz = player.position.z, py = player.position.y;
+      const now = Date.now();
+      if (!window._tpCooldown) window._tpCooldown = 0;
+      const onCooldown = now < window._tpCooldown;
       for (const tp of teleporters) {
         const dx = px - tp.mesh.position.x, dz = pz - tp.mesh.position.z;
         const onPad = Math.abs(dx) < 0.5 && Math.abs(dz) < 0.5
           && Math.abs(py - tp.mesh.position.y) < 1.5;
-        if (onPad) { player.position.y = tp.toY; break; }
+        if (onPad && !onCooldown) {
+          player.position.y = tp.toY;
+          playerVel.set(0, 0, 0); // kill momentum when teleporting
+          window._tpCooldown = now + 3000;
+          break;
+        }
       }
-      // Pulse teleporter glow
+      // Pulse teleporter glow — dim while on cooldown
+      const cdFrac = Math.max(0, (window._tpCooldown - now) / 3000);
       teleporters.forEach(tp => {
-        tp.mesh.material.emissiveIntensity = 0.4 + Math.sin(Date.now() * 0.004) * 0.3;
+        const pulse = onCooldown
+          ? 0.1 + cdFrac * 0.15  // dim/slow pulse during cooldown
+          : 0.4 + Math.sin(now * 0.004) * 0.3;
+        tp.mesh.material.emissiveIntensity = pulse;
       });
 
       // Auto income
