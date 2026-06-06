@@ -136,8 +136,6 @@
       { id:'aut',  name:'Auto',         desc:'Passive income',      parent:'root',branch:'auto',    baseCost:25,   costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0x2980b9 },
       { id:'mul',  name:'Multiply',     desc:'Earnings multipliers',parent:'root',branch:'mult',    baseCost:100,  costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0xf39c12 },
       { id:'spc',  name:'Special',      desc:'Unique upgrades',     parent:'root',branch:'special', baseCost:300,  costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0x9b59b6 },
-      { id:'prs',  name:'Prestige',     desc:'Unlock after prestige',parent:'root',branch:'prestige',baseCost:1,  costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0xf8c471, requirePres:1 },
-      { id:'reb',  name:'Rebirth',      desc:'Unlock after rebirth',parent:'root',branch:'rebirth', baseCost:1,   costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0xec407a, requireReb:1 },
 
       // ══ CLICK BRANCH ══
       { id:'c1', name:'Better Finger',  desc:'+1 c$/click',         parent:'clk', branch:'click',   baseCost:10,   costMult:1.5, maxLvl:20, type:'click_add',  val:1,    color:0xff6b6b },
@@ -203,19 +201,19 @@
       { id:'s6', name:'Brick Hive',     desc:'+100 c$/sec',         parent:'s4',  branch:'special', baseCost:100e3,costMult:2.8, maxLvl:6,  type:'auto_add',    val:100, color:0x6c3483 },
       { id:'s7', name:'Stud Storm',     desc:'×2 + 50/sec',         parent:'s2',  branch:'special', baseCost:500e3,costMult:3.0, maxLvl:5,  type:'global_mult', val:2,   color:0x4a235a },
 
-      // ══ PRESTIGE BRANCH (floor 1 gated) ══
-      { id:'p1', name:'Pres. Boost',    desc:'×2 prestige mult',    parent:'prs', branch:'prestige',baseCost:1,    costMult:2.5, maxLvl:10, type:'pres_mult',  val:2,    color:0xfef9e7, requirePres:1 },
-      { id:'p2', name:'Pres. Auto',     desc:'+50 c$/sec perm',     parent:'p1',  branch:'prestige',baseCost:5,    costMult:2.0, maxLvl:8,  type:'auto_add',   val:50,   color:0xfcf3cf, requirePres:1 },
-      { id:'p3', name:'Mega Prestige',  desc:'×5 prestige mult',    parent:'p2',  branch:'prestige',baseCost:20,   costMult:3.0, maxLvl:6,  type:'pres_mult',  val:5,    color:0xf9e79f, requirePres:2 },
-      { id:'p4', name:'Pres. Storm',    desc:'×10 click perm',      parent:'p1',  branch:'prestige',baseCost:8,    costMult:2.5, maxLvl:6,  type:'click_mult', val:10,   color:0xf7dc6f, requirePres:2 },
+      // ══ PRESTIGE BRANCH (connects to final main upgrades) ══
+      { id:'p1', name:'Pres. Boost',    desc:'×2 prestige mult',    parent:'c5', branch:'prestige',baseCost:1,    costMult:2.5, maxLvl:10, type:'pres_mult',  val:2,    color:0xfef9e7, requirePres:1 },
+      { id:'p2', name:'Pres. Auto',     desc:'+50 c$/sec perm',     parent:'a5',  branch:'prestige',baseCost:5,    costMult:2.0, maxLvl:8,  type:'auto_add',   val:50,   color:0xfcf3cf, requirePres:1 },
+      { id:'p3', name:'Mega Prestige',  desc:'×5 prestige mult',    parent:'m5',  branch:'prestige',baseCost:20,   costMult:3.0, maxLvl:6,  type:'pres_mult',  val:5,    color:0xf9e79f, requirePres:2 },
+      { id:'p4', name:'Pres. Storm',    desc:'×10 click perm',      parent:'s5',  branch:'prestige',baseCost:8,    costMult:2.5, maxLvl:6,  type:'click_mult', val:10,   color:0xf7dc6f, requirePres:2 },
       { id:'p5', name:'Prestige God',   desc:'×100 prestige mult',  parent:'p3',  branch:'prestige',baseCost:100,  costMult:4.0, maxLvl:4,  type:'pres_mult',  val:100,  color:0xf4d03f, requirePres:5 },
       { id:'p6', name:'Pres. Surge',    desc:'+500 c$/sec perm',    parent:'p2',  branch:'prestige',baseCost:15,   costMult:2.2, maxLvl:8,  type:'auto_add',   val:500,  color:0xf1c40f, requirePres:2 },
       { id:'p7', name:'Pres. Nova',     desc:'×20 prestige mult',   parent:'p4',  branch:'prestige',baseCost:50,   costMult:3.5, maxLvl:5,  type:'pres_mult',  val:20,   color:0xd4ac0d, requirePres:3 },
 
-      // ══ REBIRTH BRANCH (floor 2 gated) ══
-      { id:'r1', name:'Reb. Surge',     desc:'×5 rebirth mult',     parent:'reb', branch:'rebirth', baseCost:1,    costMult:3.0, maxLvl:8,  type:'reb_mult',   val:5,    color:0xf1948a, requireReb:1 },
-      { id:'r2', name:'Reb. Infinity',  desc:'×10 rebirth mult',    parent:'r1',  branch:'rebirth', baseCost:5,    costMult:3.5, maxLvl:6,  type:'reb_mult',   val:10,   color:0xec7063, requireReb:1 },
-      { id:'r3', name:'Reb. Auto God',  desc:'+5000 c$/sec perm',   parent:'r1',  branch:'rebirth', baseCost:3,    costMult:3.0, maxLvl:6,  type:'auto_add',   val:5e3,  color:0xe74c3c, requireReb:1 },
+      // ══ REBIRTH BRANCH (connects to prestige upgrades) ══
+      { id:'r1', name:'Reb. Surge',     desc:'×5 rebirth mult',     parent:'p5', branch:'rebirth', baseCost:1,    costMult:3.0, maxLvl:8,  type:'reb_mult',   val:5,    color:0xf1948a, requireReb:1 },
+      { id:'r2', name:'Reb. Infinity',  desc:'×10 rebirth mult',    parent:'p7',  branch:'rebirth', baseCost:5,    costMult:3.5, maxLvl:6,  type:'reb_mult',   val:10,   color:0xec7063, requireReb:1 },
+      { id:'r3', name:'Reb. Auto God',  desc:'+5000 c$/sec perm',   parent:'p5',  branch:'rebirth', baseCost:3,    costMult:3.0, maxLvl:6,  type:'auto_add',   val:5e3,  color:0xe74c3c, requireReb:1 },
       { id:'r4', name:'Reb. Godclick',  desc:'×1000 click perm',    parent:'r2',  branch:'rebirth', baseCost:20,   costMult:4.0, maxLvl:4,  type:'click_mult', val:1000, color:0xcb4335, requireReb:2 },
       { id:'r5', name:'Singularity',    desc:'×1000 all earnings',  parent:'r4',  branch:'rebirth', baseCost:100,  costMult:5.0, maxLvl:3,  type:'global_mult',val:1000, color:0xb03a2e, requireReb:3 },
       { id:'r6', name:'Reb. Storm',     desc:'×50 rebirth mult',    parent:'r2',  branch:'rebirth', baseCost:30,   costMult:4.0, maxLvl:4,  type:'reb_mult',   val:50,   color:0x922b21, requireReb:2 },
@@ -233,8 +231,8 @@
       { id:'p8', name:'Prestige Summit',  desc:'×50 prestige mult',   parent:'p5',  branch:'prestige',baseCost:500,  costMult:4.5, maxLvl:4,  type:'pres_mult',  val:50,   color:0xe8d545, requirePres:8 },
       { id:'p9', name:'Ascended Prestige',desc:'×200 prestige mult',  parent:'p8',  branch:'prestige',baseCost:2e3,  costMult:5.0, maxLvl:3,  type:'pres_mult',  val:200,  color:0xd4ac0d, requirePres:10 },
       { id:'p10',name:'Pres. Cataclysm',  desc:'+5000 c$/sec perm',   parent:'p6',  branch:'prestige',baseCost:300,  costMult:3.5, maxLvl:5,  type:'auto_add',   val:5e3,  color:0xf1c40f, requirePres:5 },
-      { id:'r8', name:'Reb. Godhood',     desc:'×5000 rebirth mult',  parent:'r5',  branch:'rebirth', baseCost:1e3,  costMult:6.0, maxLvl:3,  type:'reb_mult',   val:5e3,  color:0x5e0000, requireReb:5 },
-      { id:'r9', name:'Void God',        desc:'×50000 click perm',   parent:'r7',  branch:'rebirth', baseCost:5e3,  costMult:7.0, maxLvl:2,  type:'click_mult', val:50e3, color:0x2a0000, requireReb:4 },
+      { id:'r8', name:'Reb. Godhood',     desc:'×5000 rebirth mult',  parent:'r5',  branch:'rebirth', baseCost:1e3,  costMult:6.0, maxLvl:3,  type:'reb_mult',   val:5e3,  color:0xf1948a, requireReb:5 },
+      { id:'r9', name:'Void God',        desc:'×50000 click perm',   parent:'r7',  branch:'rebirth', baseCost:5e3,  costMult:7.0, maxLvl:2,  type:'click_mult', val:50e3, color:0xec7063, requireReb:4 },
       { id:'c18', name:'Chaos Strike',    desc:'×30 click value',     parent:'c14', branch:'click',   baseCost:5e6,  costMult:3.0, maxLvl:6,  type:'click_mult', val:30,   color:0xffb84d },
       { id:'c19', name:'Inferno Blaze',   desc:'×100 click value',    parent:'c18', branch:'click',   baseCost:100e6,costMult:3.5, maxLvl:5,  type:'click_mult', val:100,  color:0xff6b35 },
       { id:'a17', name:'Overdrive',       desc:'×3 auto earnings',    parent:'a16', branch:'auto',    baseCost:500e9,costMult:6.0, maxLvl:3,  type:'global_mult',val:3,    color:0x1a4d1a },
@@ -501,17 +499,6 @@
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Bright stud grid on floor
-    const studFloorGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12);
-    const studFloorMat = new THREE.MeshStandardMaterial({ color: 0x5bb35b, roughness: 0.7, metalness: 0.1 });
-    for (let x = -18; x <= 18; x += 1.2) {
-      for (let z = -18; z <= 18; z += 1.2) {
-        const s = new THREE.Mesh(studFloorGeo, studFloorMat);
-        s.position.set(x, 0.025, z);
-        s.receiveShadow = true;
-        scene.add(s);
-      }
-    }
 
 
     // ---- MOUNTAIN TERRAIN — Blocky Roblox-style mountain ----
@@ -628,70 +615,6 @@
       makeTree(x, z, 7, 0.6 + Math.random() * 0.4);
     });
 
-    // ---- Floor 1 & 2 platforms + teleporter pads ----
-    function makeFloorPlatform(y, color, brightColor) {
-      const mat = new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.8,
-        metalness: 0.1,
-        emissive: new THREE.Color(color).multiplyScalar(0.4),
-        emissiveIntensity: 0.2
-      });
-      const fl = new THREE.Mesh(new THREE.BoxGeometry(40, 0.4, 40), mat);
-      fl.position.set(0, y - 0.2, -10);
-      fl.receiveShadow = true;
-      scene.add(fl);
-      // Stud grid
-      const sg = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12);
-      const sm = new THREE.MeshStandardMaterial({
-        color: brightColor,
-        roughness: 0.6,
-        metalness: 0.15
-      });
-      for (let x = -18; x <= 18; x += 1.2) for (let z = -30; z <= 10; z += 1.2) {
-        const s = new THREE.Mesh(sg, sm);
-        s.position.set(x, y + 0.025, z);
-        scene.add(s);
-      }
-    }
-    makeFloorPlatform(7,  0x2a5a9a, 0x5a8ace); // Floor 1 — blue
-    makeFloorPlatform(14, 0x5a3a7a, 0x9a6aaa); // Floor 2 — purple
-
-    // Teleporter pads — glow bricks that move player between floors
-    const teleporters = [];
-    function makeTeleporter(x, fromY, toY, label, color) {
-      const geo = new THREE.BoxGeometry(0.6, 0.1, 0.6);
-      const mat = new THREE.MeshStandardMaterial({
-        color,
-        emissive: color,
-        emissiveIntensity: 0.9,
-        roughness: 0.2,
-        metalness: 0.3
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, fromY + 0.05, 3);
-      mesh.castShadow = true;
-      scene.add(mesh);
-      // Label
-      const c = document.createElement('canvas'); c.width = 256; c.height = 64;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#' + color.toString(16).padStart(6,'0');
-      ctx.fillRect(0,0,256,64);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 22px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(label, 128, 40);
-      const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.55, 0.14),
-        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true })
-      );
-      plane.position.set(x, fromY + 0.22, 3);
-      plane.rotation.x = -0.4;
-      scene.add(plane);
-      teleporters.push({ mesh, toY });
-    }
-    makeTeleporter(-2, 0,  7,  '▲ Floor 2', 0x2196f3);
-    makeTeleporter(-2, 7,  0,  '▼ Floor 1', 0x1565c0);
-    makeTeleporter( 2, 7,  14, '▲ Floor 3', 0x9c27b0);
-    makeTeleporter( 2, 14, 7,  '▼ Floor 2', 0x6a1b9a);
 
     // ================================================================
     // BRICK BUILDER
@@ -714,14 +637,6 @@
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
       body.castShadow = true; body.receiveShadow = true;
       group.add(body);
-      const sg = new THREE.CylinderGeometry(STUD_R * sc, STUD_R * sc, STUD_H * sc, STUD_SEG);
-      const topY = h / 2 + (STUD_H * sc) / 2;
-      for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
-        const stud = new THREE.Mesh(sg, mat);
-        stud.position.set((c-(cols-1)/2)*UNIT*sc, topY, (r-(rows-1)/2)*UNIT*sc);
-        stud.castShadow = true;
-        group.add(stud);
-      }
       return group;
     }
 
@@ -1469,30 +1384,6 @@
       // Idle brick rotation when not in VR
       if (!renderer.xr.isPresenting && brickGroup) brickGroup.rotation.y += dt * 0.5;
 
-      // Teleporter pads — step on to travel between floors (3s cooldown)
-      const px = player.position.x, pz = player.position.z, py = player.position.y;
-      const now = Date.now();
-      if (!window._tpCooldown) window._tpCooldown = 0;
-      const onCooldown = now < window._tpCooldown;
-      for (const tp of teleporters) {
-        const dx = px - tp.mesh.position.x, dz = pz - tp.mesh.position.z;
-        const onPad = Math.abs(dx) < 0.5 && Math.abs(dz) < 0.5
-          && Math.abs(py - tp.mesh.position.y) < 1.5;
-        if (onPad && !onCooldown) {
-          player.position.y = tp.toY;
-          playerVel.set(0, 0, 0); // kill momentum when teleporting
-          window._tpCooldown = now + 3000;
-          break;
-        }
-      }
-      // Pulse teleporter glow — dim while on cooldown
-      const cdFrac = Math.max(0, (window._tpCooldown - now) / 3000);
-      teleporters.forEach(tp => {
-        const pulse = onCooldown
-          ? 0.1 + cdFrac * 0.15  // dim/slow pulse during cooldown
-          : 0.4 + Math.sin(now * 0.004) * 0.3;
-        tp.mesh.material.emissiveIntensity = pulse;
-      });
 
       // Auto income
       autoAccum += dt;
