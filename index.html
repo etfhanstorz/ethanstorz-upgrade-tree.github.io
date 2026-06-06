@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <title>Brick Clicker</title>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="icons/icon-192.png"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #1a1a2e; color: #eee;
+      font-family: system-ui, sans-serif; overflow: hidden; }
+
+    /* ---- HUD: c$ counter ---- */
+    #hud {
+      position: fixed; top: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: center; gap: 18px;
+      padding: 12px 20px; pointer-events: none; z-index: 10;
+      background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent);
+    }
+    #hud .cash {
+      font-size: clamp(22px, 4vw, 32px); font-weight: 800; letter-spacing: .02em;
+      color: #f5d020; text-shadow: 0 0 14px rgba(245,208,32,.45);
+    }
+    #hud .cps {
+      font-size: 13px; color: rgba(255,255,255,.5); align-self: flex-end; margin-bottom: 3px;
+    }
+
+    /* ---- Click feedback float ---- */
+    .floater {
+      position: fixed; pointer-events: none; font-weight: 800;
+      font-size: 18px; color: #f5d020; text-shadow: 0 0 8px #f5d020;
+      animation: floatUp .8s ease-out forwards; z-index: 99;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+    }
+
+    /* ---- Upgrade panel ---- */
+    #panel {
+      position: fixed; top: 50%; right: 14px; transform: translateY(-50%);
+      width: 200px; display: flex; flex-direction: column; gap: 7px;
+      background: rgba(10,10,24,.8); backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,.1); border-radius: 16px;
+      padding: 14px 11px; z-index: 10; max-height: 90vh; overflow-y: auto;
+    }
+    #panel .p-title {
+      font-size: 11px; font-weight: 800; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(255,255,255,.35);
+      text-align: center; margin-bottom: 4px;
+    }
+    .upg-btn {
+      all: unset; cursor: pointer; border-radius: 10px;
+      padding: 9px 10px; display: flex; flex-direction: column; gap: 3px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09);
+      transition: background .15s, transform .1s, opacity .2s;
+    }
+    .upg-btn:hover:not(:disabled)  { background: rgba(255,255,255,.12); }
+    .upg-btn:active:not(:disabled) { transform: scale(.97); }
+    .upg-btn:disabled, .upg-btn.locked { opacity: .4; cursor: default; }
+    .upg-btn .u-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .upg-btn .u-desc { font-size: 10px; color: rgba(255,255,255,.45); }
+    .upg-btn .u-cost {
+      font-size: 12px; font-weight: 800; color: #f5d020;
+      margin-top: 2px;
+    }
+    .upg-btn .u-level { font-size: 10px; color: rgba(255,255,255,.3); float: right; }
+
+    /* ---- PC crosshair ---- */
+    #crosshair {
+      position: fixed; top: 50%; left: 50%; width: 10px; height: 10px;
+      margin: -5px 0 0 -5px; border-radius: 50%;
+      background: rgba(255,255,255,.8); pointer-events: none; display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <span class="cash" id="cash-display">c$0</span>
+    <span class="cps"  id="cps-display"></span>
+  </div>
+  <div id="crosshair"></div>
+
+  <div id="panel">
+    <div class="p-title">Upgrades</div>
+    <!-- filled by JS -->
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+    import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
+    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+    // ---- Renderer -------------------------------------------------------
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.xr.enabled = true;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer, {
+      optionalFeatures: ['hand-tracking', 'local-floor', 'bounded-floor'],
+      domOverlay: { root: document.getElementById('panel') }
+    }));
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // ---- Scene / camera / player rig ------------------------------------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+    scene.fog = new THREE.Fog(0x1a1a2e, 8, 22);
+
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.01, 50);
+    camera.position.set(0, 1.6, 0);
+
+    const player = new THREE.Group();
+    player.add(camera);
+    scene.add(player);
+
+    // ---- Lights ---------------------------------------------------------
+    scene.add(new THREE.AmbientLight(0x334466, 1.5));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.8);
+    sun.position.set(3, 6, 4);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    scene.add(sun);
+    const fill = new THREE.PointLight(0x4488ff, 1.2, 8);
+    fill.position.set(-2, 2, 1);
+    scene.add(fill);
+
+    // ---- Floor ----------------------------------------------------------
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x22223a, roughness: .95 });
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(10, 48).rotateX(-Math.PI/2), floorMat);
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // ---- Roblox-style brick builder ------------------------------------
+    // A Lego brick: flat body + a grid of cylindrical studs on top.
+    const STUD_R  = 0.095;
+    const STUD_H  = 0.07;
+    const STUD_SEG = 18;
+
+    function makeBrick(cols, rows, unitW, unitD, height, color) {
+      const group = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({
+        color, roughness: .35, metalness: .08
+      });
+
+      // Body
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(cols * unitW, height, rows * unitD),
+        mat
+      );
+      body.castShadow = true;
+      body.receiveShadow = true;
+      group.add(body);
+
+      // Studs on top
+      const studGeo = new THREE.CylinderGeometry(STUD_R, STUD_R, STUD_H, STUD_SEG);
+      const topY = height / 2 + STUD_H / 2;
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          const sx = (c - (cols - 1) / 2) * unitW;
+          const sz = (r - (rows - 1) / 2) * unitD;
+          const stud = new THREE.Mesh(studGeo, mat);
+          stud.position.set(sx, topY, sz);
+          stud.castShadow = true;
+          group.add(stud);
+        }
+      }
+      return group;
+    }
+
+    // ---- The main clickable brick ----------------------------------------
+    let brickCols = 2, brickRows = 2;
+    const UNIT = 0.24;
+    const BRICK_H = 0.22;
+    const BRICK_COLORS = [
+      0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6,
+      0x1abc9c, 0xe67e22, 0xecf0f1
+    ];
+    let brickColorIndex = 0;
+    let brickGroup = null;
+    const BRICK_POS = new THREE.Vector3(0, 1.15, -1.1);
+
+    function rebuildBrick() {
+      if (brickGroup) scene.remove(brickGroup);
+      brickGroup = makeBrick(
+        brickCols, brickRows, UNIT, UNIT, BRICK_H,
+        BRICK_COLORS[brickColorIndex % BRICK_COLORS.length]
+      );
+      brickGroup.position.copy(BRICK_POS);
+      scene.add(brickGroup);
+    }
+    rebuildBrick();
+
+    // ---- Economy --------------------------------------------------------
+    let cash    = 0;
+    let totalEarned = 0;
+
+    const upgrades = [
+      {
+        id: 'click1',  name: 'Better Finger',
+        desc: 'Each click earns more c$.',
+        baseCost: 10,  costMult: 1.6,  maxLevel: 20,
+        level: 0,
+        effect: () => {} // handled in clickValue()
+      },
+      {
+        id: 'auto1',   name: 'Auto Tapper',
+        desc: 'Taps the brick once/sec automatically.',
+        baseCost: 50,  costMult: 1.8,  maxLevel: 15,
+        level: 0,
+        effect: () => {}
+      },
+      {
+        id: 'mult1',   name: 'Golden Stud',
+        desc: 'Multiplies ALL earnings.',
+        baseCost: 200, costMult: 2.2,  maxLevel: 10,
+        level: 0,
+        effect: () => {}
+      },
+      {
+        id: 'size1',   name: 'Bigger Brick',
+        desc: 'Brick grows more studs!',
+        baseCost: 500, costMult: 3.0,  maxLevel: 6,
+        level: 0,
+        effect: (lvl) => {
+          brickCols = 2 + lvl;
+          brickRows = 2 + lvl;
+          rebuildBrick();
+        }
+      },
+      {
+        id: 'color1',  name: 'New Paint',
+        desc: 'Changes the brick color.',
+        baseCost: 150, costMult: 1.5,  maxLevel: 7,
+        level: 0,
+        effect: (lvl) => {
+          brickColorIndex = lvl;
+          rebuildBrick();
+        }
+      },
+    ];
+
+    function upgCost(u) {
+      return Math.floor(u.baseCost * Math.pow(u.costMult, u.level));
+    }
+
+    function clickMultiplier() {
+      const g = upgrades.find(u => u.id === 'mult1');
+      return 1 + g.level * 0.5;
+    }
+
+    function clickValue() {
+      const c = upgrades.find(u => u.id === 'click1');
+      return (1 + c.level) * clickMultiplier();
+    }
+
+    function autoRate() { // c$ per second
+      const a = upgrades.find(u => u.id === 'auto1');
+      return a.level * clickValue() * clickMultiplier() * 0.8;
+    }
+
+    function earn(amount, screenX, screenY) {
+      cash += amount;
+      totalEarned += amount;
+      updateHUD();
+      if (screenX !== undefined) spawnFloater(amount, screenX, screenY);
+    }
+
+    // ---- HUD & floaters -------------------------------------------------
+    const cashDisplay = document.getElementById('cash-display');
+    const cpsDisplay  = document.getElementById('cps-display');
+
+    function fmt(n) {
+      if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+      if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+      return Math.floor(n).toString();
+    }
+
+    function updateHUD() {
+      cashDisplay.textContent = 'c$' + fmt(cash);
+      const cps = autoRate();
+      cpsDisplay.textContent = cps > 0 ? fmt(cps) + '/s' : '';
+      renderUpgrades();
+    }
+
+    function spawnFloater(amount, x, y) {
+      const el = document.createElement('div');
+      el.className = 'floater';
+      el.textContent = '+c$' + fmt(amount);
+      el.style.left = (x - 30) + 'px';
+      el.style.top  = (y - 20) + 'px';
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }
+
+    // ---- Upgrade panel --------------------------------------------------
+    const panel = document.getElementById('panel');
+
+    function renderUpgrades() {
+      // rebuild buttons each tick (simple approach)
+      const existing = panel.querySelectorAll('.upg-btn');
+      existing.forEach((el, i) => {
+        const u = upgrades[i];
+        if (!u) return;
+        const cost = upgCost(u);
+        const maxed = u.level >= u.maxLevel;
+        el.disabled = maxed || cash < cost;
+        el.querySelector('.u-cost').textContent = maxed ? 'MAXED' : 'c$' + fmt(cost);
+        el.querySelector('.u-level').textContent = maxed ? '' : `${u.level}/${u.maxLevel}`;
+      });
+    }
+
+    function buildUpgradePanel() {
+      upgrades.forEach(u => {
+        const btn = document.createElement('button');
+        btn.className = 'upg-btn';
+        btn.innerHTML = `
+          <div class="u-name">${u.name} <span class="u-level"></span></div>
+          <div class="u-desc">${u.desc}</div>
+          <div class="u-cost"></div>
+        `;
+        btn.addEventListener('click', () => {
+          const cost = upgCost(u);
+          if (cash < cost || u.level >= u.maxLevel) return;
+          cash -= cost;
+          u.level++;
+          u.effect(u.level);
+          updateHUD();
+        });
+        panel.appendChild(btn);
+      });
+      renderUpgrades();
+    }
+    buildUpgradePanel();
+    updateHUD();
+
+    // ---- Raycasting: what counts as hitting the brick --------------------
+    const raycaster = new THREE.Raycaster();
+
+    function getBrickMeshes() {
+      const meshes = [];
+      brickGroup.traverse(o => { if (o.isMesh) meshes.push(o); });
+      return meshes;
+    }
+
+    function onBrickHit(screenX, screenY) {
+      earn(clickValue(), screenX, screenY);
+      // Quick scale punch animation
+      brickGroup.scale.setScalar(1.07);
+    }
+
+    // ---- VR Controllers & hands -----------------------------------------
+    const controllerModelFactory = new XRControllerModelFactory();
+    const handModelFactory = new XRHandModelFactory();
+    const controllers = [];
+    const tempMatrix = new THREE.Matrix4();
+
+    function buildController(index) {
+      const ctrl = renderer.xr.getController(index);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-1)
+      ]);
+      const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({
+        color: 0xffffff, opacity: .4, transparent: true
+      }));
+      line.scale.z = 4;
+      ctrl.add(line);
+
+      ctrl.addEventListener('selectstart', () => {
+        // Raycast from controller
+        tempMatrix.identity().extractRotation(ctrl.matrixWorld);
+        raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
+        raycaster.ray.direction.set(0,0,-1).applyMatrix4(tempMatrix);
+        const hits = raycaster.intersectObjects(getBrickMeshes(), false);
+        if (hits.length) onBrickHit();
+      });
+
+      player.add(ctrl);
+      const grip = renderer.xr.getControllerGrip(index);
+      grip.add(controllerModelFactory.createControllerModel(grip));
+      player.add(grip);
+      const hand = renderer.xr.getHand(index);
+      hand.add(handModelFactory.createHandModel(hand, 'mesh'));
+      player.add(hand);
+      controllers.push(ctrl);
+    }
+    buildController(0);
+    buildController(1);
+
+    // ---- PC controls ----------------------------------------------------
+    const controls  = new PointerLockControls(camera, renderer.domElement);
+    const crosshair = document.getElementById('crosshair');
+    const keys = {};
+    const screenC = new THREE.Vector2(0, 0);
+    const SPEED = 2.5, DEAD = 0.2;
+
+    controls.addEventListener('lock',   () => crosshair.style.display = 'block');
+    controls.addEventListener('unlock', () => crosshair.style.display = 'none');
+
+    renderer.domElement.addEventListener('click', () => {
+      if (renderer.xr.isPresenting) return;
+      if (!controls.isLocked) { controls.lock(); return; }
+      raycaster.setFromCamera(screenC, camera);
+      const hits = raycaster.intersectObjects(getBrickMeshes(), false);
+      if (hits.length) {
+        // Map hit to screen center for floater
+        const p = hits[0].point.clone().project(camera);
+        const sx = ( p.x * .5 + .5) * innerWidth;
+        const sy = (-p.y * .5 + .5) * innerHeight;
+        onBrickHit(sx, sy);
+      }
+    });
+
+    addEventListener('keydown', e => { keys[e.code] = true; });
+    addEventListener('keyup',   e => { keys[e.code] = false; });
+
+    // Joystick locomotion (VR) -------------------------------------------
+    const fwd = new THREE.Vector3(), right = new THREE.Vector3();
+    const headQ = new THREE.Quaternion(), headP = new THREE.Vector3();
+    let canTurn = true;
+    const TURN = Math.PI / 6;
+
+    function vrLocomotion(dt) {
+      const session = renderer.xr.getSession();
+      if (!session) return;
+      for (const src of session.inputSources) {
+        if (!src.gamepad || !src.handedness) continue;
+        const ax = src.gamepad.axes;
+        const x = ax.length > 2 ? ax[2] : ax[0];
+        const y = ax.length > 3 ? ax[3] : ax[1];
+        if (src.handedness === 'left') {
+          if (Math.abs(x) < DEAD && Math.abs(y) < DEAD) continue;
+          camera.getWorldQuaternion(headQ);
+          fwd.set(0,0,-1).applyQuaternion(headQ); fwd.y=0; fwd.normalize();
+          right.set(1,0,0).applyQuaternion(headQ); right.y=0; right.normalize();
+          player.position.addScaledVector(fwd, -y * SPEED * dt);
+          player.position.addScaledVector(right, x * SPEED * dt);
+        } else if (src.handedness === 'right') {
+          if (Math.abs(x) < 0.6) { canTurn = true; continue; }
+          if (!canTurn) continue;
+          canTurn = false;
+          const angle = x > 0 ? -TURN : TURN;
+          camera.getWorldPosition(headP);
+          player.position.sub(headP);
+          player.position.applyAxisAngle(new THREE.Vector3(0,1,0), angle);
+          player.position.add(headP);
+          player.rotateY(angle);
+        }
+      }
+    }
+
+    // PC movement ---------------------------------------------------------
+    function pcUpdate(dt) {
+      if (renderer.xr.isPresenting || !controls.isLocked) return;
+      const s = SPEED * dt;
+      if (keys['KeyW'] || keys['ArrowUp'])    controls.moveForward(s);
+      if (keys['KeyS'] || keys['ArrowDown'])  controls.moveForward(-s);
+      if (keys['KeyA'] || keys['ArrowLeft'])  controls.moveRight(-s);
+      if (keys['KeyD'] || keys['ArrowRight']) controls.moveRight(s);
+    }
+
+    // ---- Brick hover highlight ------------------------------------------
+    const highlightColor = new THREE.Color(0xffffff);
+    let lastHovered = false;
+
+    function updateHover() {
+      if (renderer.xr.isPresenting) return;
+      raycaster.setFromCamera(screenC, camera);
+      const hits = raycaster.intersectObjects(getBrickMeshes(), false);
+      const hovered = hits.length > 0;
+      if (hovered !== lastHovered) {
+        brickGroup.traverse(o => {
+          if (o.isMesh) {
+            o.material = o.material.clone();
+            o.material.emissive.setHex(hovered ? 0x223344 : 0x000000);
+          }
+        });
+        lastHovered = hovered;
+        renderer.domElement.style.cursor = (hovered && controls.isLocked) ? 'pointer' : '';
+      }
+    }
+
+    // ---- Auto-click ticker ---------------------------------------------
+    let autoAccum = 0;
+
+    // ---- Brick scale spring back ----------------------------------------
+    function brickSpring(dt) {
+      const s = brickGroup.scale.x;
+      if (Math.abs(s - 1) > 0.001) {
+        brickGroup.scale.setScalar(s + (1 - s) * Math.min(1, dt * 12));
+      }
+    }
+
+    // ---- Render loop ---------------------------------------------------
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => {
+      const dt = Math.min(clock.getDelta(), 0.05);
+
+      vrLocomotion(dt);
+      pcUpdate(dt);
+      brickSpring(dt);
+      updateHover();
+
+      // Gentle idle rotation when not in VR
+      if (!renderer.xr.isPresenting) {
+        brickGroup.rotation.y += dt * 0.4;
+      }
+
+      // Auto tapper
+      autoAccum += dt;
+      const rate = autoRate();
+      if (rate > 0 && autoAccum >= 1) {
+        autoAccum -= 1;
+        earn(rate);
+        updateHUD();
+      }
+
+      renderer.render(scene, camera);
+    });
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  </script>
+</body>
+</html>
