@@ -14,6 +14,32 @@
     #crosshair { position: fixed; top: 50%; left: 50%; width: 10px; height: 10px;
       margin: -5px 0 0 -5px; border-radius: 50%;
       background: rgba(255,255,255,.8); pointer-events: none; display: none; }
+
+    /* ---- Mobile touch controls ---- */
+    #joy-zone {
+      display: none; position: fixed; bottom: 24px; left: 24px;
+      width: 110px; height: 110px; border-radius: 50%;
+      background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.18);
+      touch-action: none; z-index: 30;
+    }
+    #joy-knob {
+      position: absolute; top: 50%; left: 50%; width: 44px; height: 44px;
+      border-radius: 50%; background: rgba(255,255,255,.32);
+      transform: translate(-50%,-50%); pointer-events: none;
+    }
+    #mob-floor-up, #mob-floor-dn {
+      display: none; position: fixed; right: 20px;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: rgba(30,30,80,.85); border: 2px solid rgba(255,255,255,.2);
+      font-size: 22px; text-align: center; line-height: 50px;
+      touch-action: none; z-index: 30; user-select: none;
+    }
+    #mob-floor-up { bottom: 100px; }
+    #mob-floor-dn { bottom: 36px; }
+    @media (pointer: coarse) {
+      #joy-zone, #mob-floor-up, #mob-floor-dn { display: block; }
+    }
+
     /* PC sidebar (hidden in VR via JS) */
     #sidebar {
       position: fixed; top: 0; right: 0; width: 200px; height: 100%;
@@ -52,6 +78,9 @@
 </head>
 <body>
   <div id="crosshair"></div>
+  <div id="joy-zone"><div id="joy-knob"></div></div>
+  <div id="mob-floor-up">▲</div>
+  <div id="mob-floor-dn">▼</div>
   <div id="sidebar">
     <h2>Stats</h2>
     <div class="sb-stat"><div class="label">c$</div><div class="val" id="s-cash">0</div></div>
@@ -790,6 +819,9 @@
         const bHits = raycaster.intersectObjects(getBrickMeshes(), false);
         if (bHits.length) { onBrickHit(); return; }
 
+        // Action bricks (save/load/prestige/rebirth)
+        if (checkActionBricks()) return;
+
         // Upgrade bricks
         for (const u of TREE_DEF) {
           const nm = nodeMeshes[u.id];
@@ -924,6 +956,7 @@
       }
       if (brickGroup) spring(brickGroup);
       Object.values(nodeMeshes).forEach(n => spring(n.group));
+      [vrSaveBrick, vrLoadBrick, vrPrestigeBrick, vrRebirthBrick].forEach(b => spring(b.group));
 
       // Billboard always faces camera
       if (billboard.visible) {
@@ -936,11 +969,146 @@
     // ================================================================
     const clock = new THREE.Clock();
     let refreshCounter = 0;
+    // ================================================================
+    // VR SAVE / LOAD BRICKS
+    // ================================================================
+    function makeActionBrick(label, color, x, y, z) {
+      const g = makeBrick(1, 1, color, true);
+      g.position.set(x, y, z);
+      scene.add(g);
+      // Label plane
+      const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#' + color.toString(16).padStart(6,'0');
+      ctx.fillRect(0,0,256,128);
+      ctx.fillStyle='#fff'; ctx.font='bold 40px system-ui'; ctx.textAlign='center';
+      ctx.fillText(label, 128, 76);
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.36, 0.18),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true })
+      );
+      plane.position.set(0, BRICK_H * 0.55 + 0.12, 0);
+      g.add(plane);
+      const meshes = [];
+      g.traverse(o => { if (o.isMesh && o !== plane) meshes.push(o); });
+      return { group: g, meshes };
+    }
+
+    // Place save/load bricks floating beside the player start area
+    const vrSaveBrick = makeActionBrick('💾 Save', 0x1a6b3a, -1.2, BRICK_H * 0.55 / 2, 1.2);
+    const vrLoadBrick = makeActionBrick('📂 Load', 0x1a3b6b,  1.2, BRICK_H * 0.55 / 2, 1.2);
+    const vrPrestigeBrick = makeActionBrick('⭐ Prestige', 0x7b2ff7, -1.2, BRICK_H * 0.55 / 2, 2.2);
+    const vrRebirthBrick  = makeActionBrick('🔥 Rebirth',  0xc0392b,  1.2, BRICK_H * 0.55 / 2, 2.2);
+
+    // Pulse them
+    let actionPulse = 0;
+    function pulseActionBricks(dt) {
+      actionPulse += dt * 2;
+      const si = 0.9 + Math.sin(actionPulse) * 0.06;
+      [vrSaveBrick, vrLoadBrick, vrPrestigeBrick, vrRebirthBrick].forEach(b => {
+        b.group.traverse(o => {
+          if (o.isMesh && o.material.emissive) o.material.emissive.setScalar(Math.sin(actionPulse) * 0.1 + 0.05);
+        });
+      });
+    }
+
+    // Add action brick raycasting to VR controller selectstart
+    // (patch into existing controller logic via a shared function)
+    function checkActionBricks() {
+      const bricks = [
+        { b: vrSaveBrick,     fn: () => { saveGame(); vrSaveBrick.group.scale.setScalar(1.2); } },
+        { b: vrLoadBrick,     fn: () => { loadGame(); vrLoadBrick.group.scale.setScalar(1.2); } },
+        { b: vrPrestigeBrick, fn: () => { doPrestige(); vrPrestigeBrick.group.scale.setScalar(1.2); } },
+        { b: vrRebirthBrick,  fn: () => { doRebirth();  vrRebirthBrick.group.scale.setScalar(1.2); } },
+      ];
+      for (const { b, fn } of bricks) {
+        const hits = raycaster.intersectObjects(b.meshes, false);
+        if (hits.length) { fn(); return true; }
+      }
+      return false;
+    }
+
+    // ================================================================
+    // MOBILE TOUCH CONTROLS
+    // ================================================================
+    const joyZone = document.getElementById('joy-zone');
+    const joyKnob = document.getElementById('joy-knob');
+    const JOY_R   = 55;
+    let joyTouch = null, joyDx = 0, joyDy = 0;
+    let lookTouch = null, lookPrevX = 0, lookPrevY = 0;
+    const LOOK_SENS = 0.003;
+    const headQM = new THREE.Quaternion();
+    const fwdM = new THREE.Vector3(), rightM = new THREE.Vector3();
+
+    document.getElementById('mob-floor-up').addEventListener('touchstart', e => {
+      e.preventDefault(); player.position.y += 7;
+    }, { passive: false });
+    document.getElementById('mob-floor-dn').addEventListener('touchstart', e => {
+      e.preventDefault(); player.position.y = Math.max(0, player.position.y - 7);
+    }, { passive: false });
+
+    addEventListener('touchstart', e => {
+      if (renderer.xr.isPresenting) return;
+      for (const t of e.changedTouches) {
+        const r = joyZone.getBoundingClientRect();
+        const inJoy = t.clientX >= r.left && t.clientX <= r.right &&
+                      t.clientY >= r.top  && t.clientY <= r.bottom;
+        if (inJoy && !joyTouch) {
+          joyTouch = t.identifier;
+        } else if (!lookTouch && !inJoy && !e.target.closest('#sidebar')) {
+          lookTouch = t.identifier;
+          lookPrevX = t.clientX; lookPrevY = t.clientY;
+        }
+      }
+    }, { passive: true });
+
+    addEventListener('touchmove', e => {
+      if (renderer.xr.isPresenting) return;
+      for (const t of e.changedTouches) {
+        if (t.identifier === joyTouch) {
+          const r = joyZone.getBoundingClientRect();
+          const cx = r.left + r.width/2, cy = r.top + r.height/2;
+          let dx = t.clientX - cx, dy = t.clientY - cy;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist > JOY_R) { dx *= JOY_R/dist; dy *= JOY_R/dist; }
+          joyDx = dx/JOY_R; joyDy = dy/JOY_R;
+          joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        }
+        if (t.identifier === lookTouch) {
+          const dx = t.clientX - lookPrevX, dy = t.clientY - lookPrevY;
+          lookPrevX = t.clientX; lookPrevY = t.clientY;
+          player.rotateY(-dx * LOOK_SENS);
+          camera.rotation.x = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, camera.rotation.x - dy * LOOK_SENS));
+        }
+      }
+    }, { passive: true });
+
+    addEventListener('touchend', e => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === joyTouch) {
+          joyTouch = null; joyDx = 0; joyDy = 0;
+          joyKnob.style.transform = 'translate(-50%,-50%)';
+        }
+        if (t.identifier === lookTouch) lookTouch = null;
+      }
+    });
+
+    function mobileUpdate(dt) {
+      if (renderer.xr.isPresenting || (joyDx === 0 && joyDy === 0)) return;
+      camera.getWorldQuaternion(headQM);
+      fwdM.set(0,0,-1).applyQuaternion(headQM); fwdM.y=0; fwdM.normalize();
+      rightM.set(1,0,0).applyQuaternion(headQM); rightM.y=0; rightM.normalize();
+      player.position.addScaledVector(fwdM,  -joyDy * SPEED * dt);
+      player.position.addScaledVector(rightM,  joyDx * SPEED * dt);
+    }
+
     renderer.setAnimationLoop(() => {
       const dt = Math.min(clock.getDelta(), 0.05);
       vrLocomotion(dt);
       pcUpdate(dt);
+      mobileUpdate(dt);
       springs(dt);
+      pulseActionBricks(dt);
       updateHover();
       updateBillboard();
 
