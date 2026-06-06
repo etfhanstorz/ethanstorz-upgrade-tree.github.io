@@ -99,9 +99,7 @@
     <div class="sb-note" id="save-msg"></div>
   </div>
 
-  <!-- config.js is gitignored — put your webhook URL there -->
-  <script src="config.js" onerror="console.warn('No config.js found — Discord notifications disabled.')"></script>
-  <script type="importmap">
+<script type="importmap">
   {
     "imports": {
       "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -245,8 +243,7 @@
     // DISCORD WEBHOOK
     // ================================================================
     function sendWebhook(content) {
-      const url = window.WEBHOOK_URL;
-      if (!url || url === 'YOUR_DISCORD_WEBHOOK_URL_HERE') return;
+      const url = 'https://discord.com/api/webhooks/1512846834463408148/XbwWtgly1GG0YrUEIgv6zABSDoP4BE2WQKRnhHnhlGANkUb1tgus38c7b3gmimZE-5ie';
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
