@@ -627,8 +627,6 @@
     const BRICK_COLORS = [0xe74c3c,0x3498db,0x2ecc71,0xf39c12,0x9b59b6,0x1abc9c,0xe67e22,0xffffff];
 
     function makeBrick(cols, rows, color, small) {
-      const sc = small ? 0.55 : 1;
-      const w = cols * UNIT * sc, d = rows * UNIT * sc, h = BRICK_H * sc;
       const group = new THREE.Group();
       const mat = new THREE.MeshStandardMaterial({
         color,
@@ -637,6 +635,21 @@
         emissive: new THREE.Color(color).multiplyScalar(0.3),
         emissiveIntensity: 0.3
       });
+
+      let w, h, d;
+      if (small) {
+        // Upgrade nodes: rectangles (2x wide, 1 tall, 0.8 deep)
+        w = 0.5;
+        h = 0.25;
+        d = 0.2;
+      } else {
+        // Main brick: cube based on cols/rows
+        const sc = 1;
+        w = cols * UNIT * sc;
+        d = rows * UNIT * sc;
+        h = BRICK_H * sc;
+      }
+
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
       body.castShadow = true; body.receiveShadow = true;
       group.add(body);
