@@ -640,9 +640,9 @@
       return group;
     }
 
-    // ---- Main brick ----
+    // ---- Main brick (floating in air) ----
     let brickGroup = null;
-    const BRICK_POS = new THREE.Vector3(0, BRICK_H / 2, 1.2); // in world space, the player starts at z=3 so this is ~1.8m ahead
+    const BRICK_POS = new THREE.Vector3(0, 3.5, 1.2); // floating high in the air
     function rebuildBrick() {
       if (brickGroup) scene.remove(brickGroup);
       brickGroup = makeBrick(brickCols, brickRows, BRICK_COLORS[brickColorIndex % BRICK_COLORS.length], false);
@@ -1381,8 +1381,11 @@
       updateHover();
       updateBillboard();
 
-      // Idle brick rotation when not in VR
-      if (!renderer.xr.isPresenting && brickGroup) brickGroup.rotation.y += dt * 0.5;
+      // Spinning brick
+      if (brickGroup) {
+        brickGroup.rotation.y += dt * 1.2; // spin constantly
+        brickGroup.rotation.x += dt * 0.3; // gentle tilt
+      }
 
 
       // Auto income
