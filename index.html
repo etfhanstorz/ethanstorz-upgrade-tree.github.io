@@ -66,6 +66,8 @@
     .sb-btn.save { background: #1a6b3a; font-size: 11px; }
     .sb-btn.load { background: #1a3b6b; font-size: 11px; }
     .sb-note { font-size: 9px; color: rgba(255,255,255,.3); text-align: center; }
+    #version-label { position: fixed; bottom: 8px; right: 10px; font-size: 10px;
+      color: rgba(255,255,255,.25); pointer-events: none; font-family: monospace; }
     /* floaters */
     .floater { position: fixed; pointer-events: none; font-weight: 800;
       font-size: 18px; color: #f5d020; text-shadow: 0 0 8px #f5d020;
@@ -77,6 +79,7 @@
   </style>
 </head>
 <body>
+  <div id="version-label">v0.35</div>
   <div id="crosshair"></div>
   <div id="joy-zone"><div id="joy-knob"></div></div>
   <div id="mob-floor-up">▲</div>
@@ -113,6 +116,13 @@
     import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
     import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+    // ================================================================
+    // VERSION
+    // ================================================================
+    const VERSION = '0.35';
+    window.VERSION = VERSION;
+    document.getElementById('version-label').textContent = 'v' + VERSION;
 
     // ================================================================
     // UPGRADE TREE DEFINITION — single root, everything branches from it
