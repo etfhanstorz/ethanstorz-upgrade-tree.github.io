@@ -903,8 +903,7 @@
       if (keys['KeyS']||keys['ArrowDown'])  controls.moveForward(-s);
       if (keys['KeyA']||keys['ArrowLeft'])  controls.moveRight(-s);
       if (keys['KeyD']||keys['ArrowRight']) controls.moveRight(s);
-      if (keys['KeyQ']) player.position.y += s * 0.5;
-      if (keys['KeyE']) player.position.y -= s * 0.5;
+      if (keys['KeyQ'] && onGround) { playerVel.y = 6; } // jump
     }
 
     // ================================================================
@@ -915,69 +914,67 @@
     let canTurn = true;
     const TURN = Math.PI / 6, DEAD = 0.2;
 
-    // ---- Gorilla Tag hand locomotion ------------------------------------
-    // Core idea: track each hand/controller grip position per frame.
-    // Velocity = (currentPos - prevPos) / dt.
-    // Apply -velocity * strength to the player — push hand back → move forward.
-    // Gravity pulls player down; floor Y (per floor) keeps them grounded.
-    const GT_STRENGTH  = 2.8;   // how much hand push translates to movement
-    const GT_GRAVITY   = 12;    // downward acceleration m/s²
-    const GT_FLOOR_EPS = 0.05;  // snap tolerance
-    const GT_FRICTION  = 0.88;  // horizontal velocity damping per frame
-    const playerVel    = new THREE.Vector3(); // world-space velocity
-    const gripPrev     = [null, null]; // previous grip world positions
+    // ---- Physics: gravity + floor collision (all platforms) -------------
+    const GT_STRENGTH  = 2.8;
+    const GT_GRAVITY   = 14;    // m/s²
+    const GT_FRICTION  = 0.82;  // horizontal damping per frame
+    const playerVel    = new THREE.Vector3();
+    const gripPrev     = [null, null];
     const gripCur      = [new THREE.Vector3(), new THREE.Vector3()];
-    let   gtActive     = false;  // true while in XR session
+    let   onGround     = false;
 
     function floorYAt(py) {
-      // Return the Y of whichever floor the player is currently on
       if (py > 10.5) return 14;
       if (py > 3.5)  return 7;
       return 0;
     }
 
-    function gorillaLocomotion(dt) {
-      if (!renderer.xr.isPresenting) return;
-      gtActive = true;
-
-      // Per-grip push
-      for (let i = 0; i < 2; i++) {
-        const grip = renderer.xr.getControllerGrip(i);
-        grip.getWorldPosition(gripCur[i]);
-        if (gripPrev[i]) {
-          const vel = gripCur[i].clone().sub(gripPrev[i]).divideScalar(Math.max(dt, 0.001));
-          // Only apply significant fast hand moves (filter out idle drift)
-          if (vel.length() > 0.5) {
-            playerVel.addScaledVector(vel, -GT_STRENGTH * dt);
-          }
-        }
-        gripPrev[i] = gripCur[i].clone();
-      }
-
+    // Called every frame regardless of platform
+    function applyPhysics(dt) {
       // Gravity
       playerVel.y -= GT_GRAVITY * dt;
 
-      // Apply velocity
+      // Apply velocity to position
       player.position.addScaledVector(playerVel, dt);
 
       // Floor collision
       const floorY = floorYAt(player.position.y);
-      if (player.position.y < floorY) {
+      if (player.position.y <= floorY + 0.01) {
         player.position.y = floorY;
         if (playerVel.y < 0) playerVel.y = 0;
+        onGround = true;
+      } else {
+        onGround = false;
       }
 
-      // Horizontal friction
-      playerVel.x *= GT_FRICTION;
-      playerVel.z *= GT_FRICTION;
+      // Horizontal friction (only on ground)
+      if (onGround) {
+        playerVel.x *= GT_FRICTION;
+        playerVel.z *= GT_FRICTION;
+      }
+    }
 
-      // Right stick snap turn (keep this even in gorilla mode)
+    renderer.xr.addEventListener('sessionend', () => {
+      playerVel.set(0, 0, 0);
+    });
+
+    function vrLocomotion(dt) {
       const session = renderer.xr.getSession();
-      if (session) {
-        for (const src of session.inputSources) {
-          if (!src.gamepad || src.handedness !== 'right') continue;
-          const ax = src.gamepad.axes;
-          const x = ax.length > 2 ? ax[2] : ax[0];
+      if (!session) return;
+      for (const src of session.inputSources) {
+        if (!src.gamepad || !src.handedness) continue;
+        const ax = src.gamepad.axes;
+        const x = ax.length > 2 ? ax[2] : ax[0];
+        const y = ax.length > 3 ? ax[3] : ax[1];
+        if (src.handedness === 'left') {
+          if (Math.abs(x) < DEAD && Math.abs(y) < DEAD) continue;
+          camera.getWorldQuaternion(headQ);
+          fwd.set(0,0,-1).applyQuaternion(headQ); fwd.y=0; fwd.normalize();
+          right.set(1,0,0).applyQuaternion(headQ); right.y=0; right.normalize();
+          // Add to velocity so gravity still applies
+          playerVel.addScaledVector(fwd,  -y * SPEED * 4);
+          playerVel.addScaledVector(right,  x * SPEED * 4);
+        } else if (src.handedness === 'right') {
           if (Math.abs(x) < 0.6) { canTurn = true; continue; }
           if (!canTurn) continue;
           canTurn = false;
@@ -989,16 +986,6 @@
           player.rotateY(a);
         }
       }
-    }
-
-    renderer.xr.addEventListener('sessionend', () => {
-      gtActive = false;
-      gripPrev[0] = gripPrev[1] = null;
-      playerVel.set(0,0,0);
-    });
-
-    function vrLocomotion(dt) {
-      gorillaLocomotion(dt);
     }
 
     // ================================================================
@@ -1122,10 +1109,10 @@
     const fwdM = new THREE.Vector3(), rightM = new THREE.Vector3();
 
     document.getElementById('mob-floor-up').addEventListener('touchstart', e => {
-      e.preventDefault(); player.position.y += 7;
+      e.preventDefault(); playerVel.y = 14; // big jump to reach next floor
     }, { passive: false });
     document.getElementById('mob-floor-dn').addEventListener('touchstart', e => {
-      e.preventDefault(); player.position.y = Math.max(0, player.position.y - 7);
+      e.preventDefault(); playerVel.y = -8; // push down to drop to lower floor
     }, { passive: false });
 
     addEventListener('touchstart', e => {
@@ -1188,6 +1175,7 @@
       vrLocomotion(dt);
       pcUpdate(dt);
       mobileUpdate(dt);
+      applyPhysics(dt);
       springs(dt);
       pulseActionBricks(dt);
       updateHover();
