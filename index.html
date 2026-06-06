@@ -865,7 +865,7 @@
     const crosshair = document.getElementById('crosshair');
     const keys = {};
     const screenC = new THREE.Vector2(0, 0);
-    const SPEED = 3.0;
+    const SPEED = 1.6;
 
     controls.addEventListener('lock',   () => { crosshair.style.display = 'block'; billboard.visible = true; });
     controls.addEventListener('unlock', () => { crosshair.style.display = 'none';  billboard.visible = false; });
@@ -972,8 +972,8 @@
           fwd.set(0,0,-1).applyQuaternion(headQ); fwd.y=0; fwd.normalize();
           right.set(1,0,0).applyQuaternion(headQ); right.y=0; right.normalize();
           // Add to velocity so gravity still applies
-          playerVel.addScaledVector(fwd,  -y * SPEED * 4);
-          playerVel.addScaledVector(right,  x * SPEED * 4);
+          playerVel.addScaledVector(fwd,  -y * SPEED * 2);
+          playerVel.addScaledVector(right,  x * SPEED * 2);
         } else if (src.handedness === 'right') {
           if (Math.abs(x) < 0.6) { canTurn = true; continue; }
           if (!canTurn) continue;
