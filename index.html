@@ -3,109 +3,71 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="theme-color" content="#0d0d1a"/>
   <title>Brick Clicker</title>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="icons/icon-192.png"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: #1a1a2e; color: #eee;
-      font-family: system-ui, sans-serif; overflow: hidden; }
-
-    /* ---- HUD: c$ counter ---- */
-    #hud {
-      position: fixed; top: 0; left: 0; right: 0;
-      display: flex; align-items: center; justify-content: center; gap: 18px;
-      padding: 12px 20px; pointer-events: none; z-index: 10;
-      background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent);
+    html, body { height: 100%; background: #0d0d1a; overflow: hidden;
+      font-family: system-ui, sans-serif; color: #eee; }
+    #crosshair { position: fixed; top: 50%; left: 50%; width: 10px; height: 10px;
+      margin: -5px 0 0 -5px; border-radius: 50%;
+      background: rgba(255,255,255,.8); pointer-events: none; display: none; }
+    /* PC sidebar (hidden in VR via JS) */
+    #sidebar {
+      position: fixed; top: 0; right: 0; width: 200px; height: 100%;
+      background: rgba(8,8,20,.85); backdrop-filter: blur(16px);
+      border-left: 1px solid rgba(255,255,255,.08);
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 14px 10px; z-index: 20; overflow-y: auto;
     }
-    #hud .cash {
-      font-size: clamp(22px, 4vw, 32px); font-weight: 800; letter-spacing: .02em;
-      color: #f5d020; text-shadow: 0 0 14px rgba(245,208,32,.45);
-    }
-    #hud .cps {
-      font-size: 13px; color: rgba(255,255,255,.5); align-self: flex-end; margin-bottom: 3px;
-    }
-
-    /* ---- Click feedback float ---- */
-    .floater {
-      position: fixed; pointer-events: none; font-weight: 800;
+    #sidebar h2 { font-size: 11px; font-weight: 800; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(255,255,255,.3); text-align: center; }
+    .sb-stat { background: rgba(255,255,255,.06); border-radius: 10px;
+      padding: 8px 10px; font-size: 12px; }
+    .sb-stat .label { color: rgba(255,255,255,.4); font-size: 10px; }
+    .sb-stat .val { font-weight: 800; color: #f5d020; font-size: 16px; }
+    .sb-btn { all: unset; cursor: pointer; display: block; width: 100%;
+      padding: 9px 10px; border-radius: 10px; font-size: 12px; font-weight: 700;
+      text-align: center; color: #fff; transition: filter .1s, transform .1s; }
+    .sb-btn:hover { filter: brightness(1.2); }
+    .sb-btn:active { transform: scale(.96); }
+    .sb-btn.prestige { background: #7b2ff7; }
+    .sb-btn.rebirth  { background: #c0392b; }
+    .sb-btn:disabled { opacity: .35; cursor: default; }
+    .sb-divider { height: 1px; background: rgba(255,255,255,.08); }
+    .sb-btn.save { background: #1a6b3a; font-size: 11px; }
+    .sb-btn.load { background: #1a3b6b; font-size: 11px; }
+    .sb-note { font-size: 9px; color: rgba(255,255,255,.3); text-align: center; }
+    /* floaters */
+    .floater { position: fixed; pointer-events: none; font-weight: 800;
       font-size: 18px; color: #f5d020; text-shadow: 0 0 8px #f5d020;
-      animation: floatUp .8s ease-out forwards; z-index: 99;
-    }
+      animation: floatUp .8s ease-out forwards; z-index: 99; }
     @keyframes floatUp {
       0%   { opacity: 1; transform: translateY(0) scale(1); }
       100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
     }
-
-    /* ---- Upgrade panel ---- */
-    #panel {
-      position: fixed; top: 50%; right: 14px; transform: translateY(-50%);
-      width: 178px; display: flex; flex-direction: column; gap: 10px;
-      background: rgba(10,10,24,.7); backdrop-filter: blur(14px);
-      border: 1px solid rgba(255,255,255,.1); border-radius: 16px;
-      padding: 14px 11px; z-index: 10; max-height: 90vh; overflow-y: auto;
-    }
-    #panel .p-title {
-      font-size: 11px; font-weight: 800; letter-spacing: .1em;
-      text-transform: uppercase; color: rgba(255,255,255,.35);
-      text-align: center; margin-bottom: 2px;
-    }
-
-    /* Lego-brick-style upgrade button */
-    .upg-btn {
-      all: unset; cursor: pointer; display: block; width: 100%;
-      position: relative; transition: transform .1s, opacity .2s;
-    }
-    .upg-btn:active:not([disabled]) { transform: scale(.96); }
-    .upg-btn[disabled] { opacity: .38; cursor: default; }
-
-    /* The brick body */
-    .upg-brick {
-      width: 100%; border-radius: 6px;
-      padding: 9px 10px 11px;
-      display: flex; flex-direction: column; gap: 2px;
-      position: relative; overflow: hidden;
-      box-shadow: 0 4px 0 rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.18);
-      transition: filter .12s;
-    }
-    .upg-btn:hover:not([disabled]) .upg-brick { filter: brightness(1.18); }
-
-    /* Stud row across the top of each brick */
-    .upg-studs {
-      display: flex; gap: 5px; margin-bottom: 5px;
-    }
-    .upg-stud {
-      width: 14px; height: 7px; border-radius: 50% / 40%;
-      background: rgba(255,255,255,.22);
-      box-shadow: 0 2px 0 rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.25);
-      flex-shrink: 0;
-    }
-
-    .upg-btn .u-name { font-size: 12px; font-weight: 800; color: #fff; line-height: 1.2; }
-    .upg-btn .u-desc { font-size: 9px;  color: rgba(255,255,255,.55); margin-top: 1px; }
-    .upg-btn .u-row  { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; }
-    .upg-btn .u-cost { font-size: 12px; font-weight: 800; color: #f5d020; }
-    .upg-btn .u-level { font-size: 9px; color: rgba(255,255,255,.4); }
-
-    /* ---- PC crosshair ---- */
-    #crosshair {
-      position: fixed; top: 50%; left: 50%; width: 10px; height: 10px;
-      margin: -5px 0 0 -5px; border-radius: 50%;
-      background: rgba(255,255,255,.8); pointer-events: none; display: none;
-    }
   </style>
 </head>
 <body>
-  <div id="hud">
-    <span class="cash" id="cash-display">c$0</span>
-    <span class="cps"  id="cps-display"></span>
-  </div>
   <div id="crosshair"></div>
-
-  <div id="panel">
-    <div class="p-title">Upgrades</div>
-    <!-- filled by JS -->
+  <div id="sidebar">
+    <h2>Stats</h2>
+    <div class="sb-stat"><div class="label">c$</div><div class="val" id="s-cash">0</div></div>
+    <div class="sb-stat"><div class="label">per second</div><div class="val" id="s-cps">0</div></div>
+    <div class="sb-stat"><div class="label">Prestiges</div><div class="val" id="s-pres">0</div></div>
+    <div class="sb-stat"><div class="label">Rebirths</div><div class="val" id="s-reb">0</div></div>
+    <div class="sb-divider"></div>
+    <h2>Ascend</h2>
+    <button class="sb-btn prestige" id="btn-prestige" disabled>⭐ Prestige</button>
+    <div class="sb-note" id="pres-req">Earn c$10K total to unlock</div>
+    <button class="sb-btn rebirth"  id="btn-rebirth"  disabled>🔥 Rebirth</button>
+    <div class="sb-note" id="reb-req">Need 5 Prestiges</div>
+    <div class="sb-divider"></div>
+    <button class="sb-btn save" onclick="saveGame()">💾 Save</button>
+    <button class="sb-btn load" onclick="loadGame()">📂 Load</button>
+    <div class="sb-note" id="save-msg"></div>
   </div>
 
   <script type="importmap">
@@ -116,7 +78,6 @@
     }
   }
   </script>
-
   <script type="module">
     import * as THREE from 'three';
     import { VRButton } from 'three/addons/webxr/VRButton.js';
@@ -124,205 +85,566 @@
     import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-    // ---- Renderer -------------------------------------------------------
+    // ================================================================
+    // UPGRADE TREE DEFINITION
+    // ================================================================
+    // type: click_add, click_mult, auto_add, auto_mult, global_mult, special
+    // parent: id of parent node (null = branches from root)
+    // branch: 'click'|'auto'|'mult'|'prestige'|'rebirth'
+    const TREE_DEF = [
+      // ---- CLICK BRANCH (top) ----
+      { id:'c1', name:'Better Finger',  desc:'+1 c$/click',         parent:null,  branch:'click', baseCost:10,    costMult:1.5, maxLvl:20, type:'click_add',  val:1,    color:0xe74c3c },
+      { id:'c2', name:'Steel Claw',     desc:'×2 click value',      parent:'c1',  branch:'click', baseCost:80,    costMult:1.8, maxLvl:15, type:'click_mult', val:2,    color:0xc0392b },
+      { id:'c3', name:'Robo Arm',       desc:'×5 click value',      parent:'c2',  branch:'click', baseCost:1e3,   costMult:2.0, maxLvl:10, type:'click_mult', val:5,    color:0x922b21 },
+      { id:'c4', name:'Quantum Fist',   desc:'×20 click value',     parent:'c3',  branch:'click', baseCost:50e3,  costMult:2.5, maxLvl:8,  type:'click_mult', val:20,   color:0xff6b6b },
+      { id:'c5', name:'God Touch',      desc:'×100 click value',    parent:'c4',  branch:'click', baseCost:5e6,   costMult:3.0, maxLvl:6,  type:'click_mult', val:100,  color:0xff0000 },
+
+      { id:'c6', name:'Double Tap',     desc:'×2 hits per click',   parent:'c1',  branch:'click', baseCost:200,   costMult:2.0, maxLvl:5,  type:'click_mult', val:2,    color:0xe91e63 },
+      { id:'c7', name:'Triple Strike',  desc:'×3 hits per click',   parent:'c6',  branch:'click', baseCost:5e3,   costMult:2.2, maxLvl:5,  type:'click_mult', val:3,    color:0xc2185b },
+      { id:'c8', name:'Combo God',      desc:'×10 hits per click',  parent:'c7',  branch:'click', baseCost:500e3, costMult:3.0, maxLvl:4,  type:'click_mult', val:10,   color:0x880e4f },
+
+      { id:'c9',  name:'Sharp Edge',    desc:'+5 c$/click',         parent:'c2',  branch:'click', baseCost:500,   costMult:1.6, maxLvl:15, type:'click_add',  val:5,    color:0xff7043 },
+      { id:'c10', name:'Crystal Nail',  desc:'+20 c$/click',        parent:'c9',  branch:'click', baseCost:8e3,   costMult:1.8, maxLvl:12, type:'click_add',  val:20,   color:0xbf360c },
+      { id:'c11', name:'Diamond Spike', desc:'+100 c$/click',       parent:'c10', branch:'click', baseCost:200e3, costMult:2.0, maxLvl:10, type:'click_add',  val:100,  color:0x4fc3f7 },
+      { id:'c12', name:'Void Shard',    desc:'+1000 c$/click',      parent:'c11', branch:'click', baseCost:10e6,  costMult:2.5, maxLvl:8,  type:'click_add',  val:1e3,  color:0x0288d1 },
+
+      // ---- AUTO BRANCH (middle) ----
+      { id:'a1', name:'Auto Tapper',    desc:'+1 c$/sec',           parent:null,  branch:'auto',  baseCost:50,    costMult:1.5, maxLvl:20, type:'auto_add',   val:1,    color:0x2980b9 },
+      { id:'a2', name:'Tap Bot',        desc:'+5 c$/sec',           parent:'a1',  branch:'auto',  baseCost:400,   costMult:1.7, maxLvl:15, type:'auto_add',   val:5,    color:0x1a6091 },
+      { id:'a3', name:'Tap Factory',    desc:'+25 c$/sec',          parent:'a2',  branch:'auto',  baseCost:5e3,   costMult:2.0, maxLvl:12, type:'auto_add',   val:25,   color:0x154360 },
+      { id:'a4', name:'Mega Array',     desc:'+100 c$/sec',         parent:'a3',  branch:'auto',  baseCost:80e3,  costMult:2.2, maxLvl:10, type:'auto_add',   val:100,  color:0x5dade2 },
+      { id:'a5', name:'Infinite Engine',desc:'+500 c$/sec',         parent:'a4',  branch:'auto',  baseCost:5e6,   costMult:2.5, maxLvl:8,  type:'auto_add',   val:500,  color:0x85c1e9 },
+
+      { id:'a6', name:'Click Drone',    desc:'Auto earns click val',parent:'a1',  branch:'auto',  baseCost:300,   costMult:1.8, maxLvl:10, type:'auto_click', val:1,    color:0x1abc9c },
+      { id:'a7', name:'Drone Fleet',    desc:'5× drone efficiency', parent:'a6',  branch:'auto',  baseCost:8e3,   costMult:2.0, maxLvl:8,  type:'auto_click', val:5,    color:0x148f77 },
+      { id:'a8', name:'Drone Empire',   desc:'25× drone efficiency',parent:'a7',  branch:'auto',  baseCost:500e3, costMult:2.5, maxLvl:6,  type:'auto_click', val:25,   color:0x0e6655 },
+
+      { id:'a9', name:'Super Factory',  desc:'+200 c$/sec',         parent:'a3',  branch:'auto',  baseCost:200e3, costMult:2.2, maxLvl:8,  type:'auto_add',   val:200,  color:0x27ae60 },
+      { id:'a10',name:'Hyper Factory',  desc:'+2000 c$/sec',        parent:'a9',  branch:'auto',  baseCost:10e6,  costMult:2.8, maxLvl:6,  type:'auto_add',   val:2e3,  color:0x1e8449 },
+      { id:'a11',name:'Omega Plant',    desc:'+20000 c$/sec',       parent:'a10', branch:'auto',  baseCost:1e9,   costMult:3.5, maxLvl:5,  type:'auto_add',   val:20e3, color:0x145a32 },
+
+      // ---- MULTIPLIER BRANCH (bottom) ----
+      { id:'m1', name:'Golden Stud',    desc:'×1.5 all earnings',   parent:null,  branch:'mult',  baseCost:200,   costMult:2.0, maxLvl:15, type:'global_mult',val:1.5,  color:0xf39c12 },
+      { id:'m2', name:'Diamond Stud',   desc:'×2 all earnings',     parent:'m1',  branch:'mult',  baseCost:2e3,   costMult:2.2, maxLvl:12, type:'global_mult',val:2,    color:0xb7950b },
+      { id:'m3', name:'Rainbow Stud',   desc:'×5 all earnings',     parent:'m2',  branch:'mult',  baseCost:50e3,  costMult:2.5, maxLvl:10, type:'global_mult',val:5,    color:0xf4d03f },
+      { id:'m4', name:'Cosmic Stud',    desc:'×20 all earnings',    parent:'m3',  branch:'mult',  baseCost:2e6,   costMult:3.0, maxLvl:8,  type:'global_mult',val:20,   color:0xf9e79f },
+      { id:'m5', name:'Void Stud',      desc:'×100 all earnings',   parent:'m4',  branch:'mult',  baseCost:100e6, costMult:3.5, maxLvl:6,  type:'global_mult',val:100,  color:0xfef9e7 },
+
+      { id:'m6', name:'Lucky Brick',    desc:'×3 all earnings',     parent:'m1',  branch:'mult',  baseCost:1e3,   costMult:2.0, maxLvl:10, type:'global_mult',val:3,    color:0xe67e22 },
+      { id:'m7', name:'Fortune Brick',  desc:'×10 all earnings',    parent:'m6',  branch:'mult',  baseCost:30e3,  costMult:2.5, maxLvl:8,  type:'global_mult',val:10,   color:0xca6f1e },
+      { id:'m8', name:'Destiny Brick',  desc:'×50 all earnings',    parent:'m7',  branch:'mult',  baseCost:2e6,   costMult:3.0, maxLvl:6,  type:'global_mult',val:50,   color:0xa04000 },
+
+      { id:'m9', name:'Silver Stud',    desc:'×1.2 all earnings',   parent:'m2',  branch:'mult',  baseCost:5e3,   costMult:1.8, maxLvl:20, type:'global_mult',val:1.2,  color:0xbdc3c7 },
+      { id:'m10',name:'Platinum Stud',  desc:'×2.5 all earnings',   parent:'m9',  branch:'mult',  baseCost:200e3, costMult:2.2, maxLvl:12, type:'global_mult',val:2.5,  color:0x85929e },
+
+      // ---- SPECIAL BRANCH (from root, forward) ----
+      { id:'s1', name:'Bigger Brick',   desc:'Brick grows a row',   parent:null,  branch:'special',baseCost:500,  costMult:3.0, maxLvl:6,  type:'brick_grow', val:1,    color:0x9b59b6 },
+      { id:'s2', name:'Super Brick',    desc:'Brick grows again',   parent:'s1',  branch:'special',baseCost:20e3, costMult:3.0, maxLvl:4,  type:'brick_grow', val:1,    color:0x7d3c98 },
+      { id:'s3', name:'Mega Brick',     desc:'Brick grows again',   parent:'s2',  branch:'special',baseCost:1e6,  costMult:4.0, maxLvl:3,  type:'brick_grow', val:1,    color:0x6c3483 },
+      { id:'s4', name:'Brick Aura',     desc:'Nearby bricks earn auto',parent:'s1',branch:'special',baseCost:5e3, costMult:2.5, maxLvl:8,  type:'auto_add',   val:10,   color:0xaf7ac5 },
+      { id:'s5', name:'Brick God',      desc:'×5 all, huge auto',   parent:'s3',  branch:'special',baseCost:10e6, costMult:4.0, maxLvl:5,  type:'global_mult',val:5,    color:0xd2b4de },
+
+      // ---- PRESTIGE BRANCH (unlocked after 1st prestige) ----
+      { id:'p1', name:'Prestige Boost', desc:'×2 prestige mult',    parent:null,  branch:'prestige',baseCost:1,   costMult:2.5, maxLvl:10, type:'pres_mult',  val:2,    color:0xf8c471, requirePres:1 },
+      { id:'p2', name:'Pres. Auto',     desc:'+50 c$/sec permanent',parent:'p1',  branch:'prestige',baseCost:5,   costMult:2.0, maxLvl:8,  type:'auto_add',   val:50,   color:0xf5b041, requirePres:1 },
+      { id:'p3', name:'Mega Prestige',  desc:'×5 prestige mult',    parent:'p2',  branch:'prestige',baseCost:20,  costMult:3.0, maxLvl:6,  type:'pres_mult',  val:5,    color:0xeb984e, requirePres:2 },
+      { id:'p4', name:'Pres. Storm',    desc:'×10 click on prestige',parent:'p1', branch:'prestige',baseCost:8,   costMult:2.5, maxLvl:6,  type:'click_mult', val:10,   color:0xdc7633, requirePres:2 },
+      { id:'p5', name:'Prestige God',   desc:'×100 prestige mult',  parent:'p3',  branch:'prestige',baseCost:100, costMult:4.0, maxLvl:4,  type:'pres_mult',  val:100,  color:0xca6f1e, requirePres:5 },
+
+      // ---- REBIRTH BRANCH (unlocked after 1st rebirth) ----
+      { id:'r1', name:'Rebirth Surge',  desc:'×5 rebirth mult',     parent:null,  branch:'rebirth', baseCost:1,   costMult:3.0, maxLvl:8,  type:'reb_mult',   val:5,    color:0xec407a, requireReb:1 },
+      { id:'r2', name:'Reb. Infinity',  desc:'×10 rebirth mult',    parent:'r1',  branch:'rebirth', baseCost:5,   costMult:3.5, maxLvl:6,  type:'reb_mult',   val:10,   color:0xe91e63, requireReb:1 },
+      { id:'r3', name:'Reb. Auto God',  desc:'+5000 c$/sec perm',   parent:'r1',  branch:'rebirth', baseCost:3,   costMult:3.0, maxLvl:6,  type:'auto_add',   val:5e3,  color:0xc2185b, requireReb:1 },
+      { id:'r4', name:'Reb. Godclick',  desc:'×1000 click mult',    parent:'r2',  branch:'rebirth', baseCost:20,  costMult:4.0, maxLvl:4,  type:'click_mult', val:1000, color:0xad1457, requireReb:2 },
+      { id:'r5', name:'Singularity',    desc:'×∞ all earnings',     parent:'r4',  branch:'rebirth', baseCost:100, costMult:5.0, maxLvl:3,  type:'global_mult',val:1000, color:0x880e4f, requireReb:3 },
+    ];
+
+    // ================================================================
+    // GAME STATE
+    // ================================================================
+    let cash = 0, totalEarned = 0;
+    let prestigeCount = 0, rebirthCount = 0;
+    let prestigePts = 0, rebirthTokens = 0;
+    let autoAccum = 0;
+    let brickCols = 2, brickRows = 2;
+    let brickColorIndex = 0;
+
+    // level map: id -> level bought
+    const levels = {};
+    TREE_DEF.forEach(u => { levels[u.id] = 0; });
+
+    // ================================================================
+    // ECONOMY HELPERS
+    // ================================================================
+    function fmt(n) {
+      if (n >= 1e12) return (n/1e12).toFixed(2) + 'T';
+      if (n >= 1e9)  return (n/1e9).toFixed(2)  + 'B';
+      if (n >= 1e6)  return (n/1e6).toFixed(2)  + 'M';
+      if (n >= 1e3)  return (n/1e3).toFixed(1)  + 'K';
+      return Math.floor(n).toString();
+    }
+
+    function presMultiplier() {
+      let m = 1;
+      if (prestigeCount > 0) m *= Math.pow(1.5, prestigeCount);
+      TREE_DEF.filter(u => u.type === 'pres_mult').forEach(u => {
+        for (let i = 0; i < levels[u.id]; i++) m *= u.val;
+      });
+      return m;
+    }
+    function rebMultiplier() {
+      let m = 1;
+      if (rebirthCount > 0) m *= Math.pow(5, rebirthCount);
+      TREE_DEF.filter(u => u.type === 'reb_mult').forEach(u => {
+        for (let i = 0; i < levels[u.id]; i++) m *= u.val;
+      });
+      return m;
+    }
+    function globalMult() {
+      let m = 1;
+      TREE_DEF.filter(u => u.type === 'global_mult').forEach(u => {
+        for (let i = 0; i < levels[u.id]; i++) m *= u.val;
+      });
+      return m * presMultiplier() * rebMultiplier();
+    }
+    function clickValue() {
+      let base = 1;
+      TREE_DEF.filter(u => u.type === 'click_add').forEach(u => { base += levels[u.id] * u.val; });
+      TREE_DEF.filter(u => u.type === 'click_mult').forEach(u => {
+        for (let i = 0; i < levels[u.id]; i++) base *= u.val;
+      });
+      return base * globalMult();
+    }
+    function autoRate() {
+      let r = 0;
+      TREE_DEF.filter(u => u.type === 'auto_add').forEach(u => { r += levels[u.id] * u.val; });
+      TREE_DEF.filter(u => u.type === 'auto_click').forEach(u => {
+        r += levels[u.id] * u.val * clickValue() * 0.1;
+      });
+      return r * globalMult();
+    }
+    function upgCost(u) {
+      return u.baseCost * Math.pow(u.costMult, levels[u.id]);
+    }
+    function isUnlocked(u) {
+      if (u.requirePres && prestigeCount < u.requirePres) return false;
+      if (u.requireReb  && rebirthCount  < u.requireReb)  return false;
+      if (!u.parent) return true;
+      return levels[u.parent] > 0;
+    }
+    const PRESTIGE_THRESHOLD = 10000;
+    const REBIRTH_THRESHOLD = 5;
+    function canPrestige() { return totalEarned >= PRESTIGE_THRESHOLD; }
+    function canRebirth()  { return prestigeCount >= REBIRTH_THRESHOLD; }
+
+    function doPrestige() {
+      if (!canPrestige()) return;
+      prestigeCount++;
+      prestigePts++;
+      cash = 0; totalEarned = 0;
+      TREE_DEF.filter(u => u.branch !== 'prestige' && u.branch !== 'rebirth')
+        .forEach(u => { levels[u.id] = 0; });
+      brickCols = 2; brickRows = 2; brickColorIndex = 0;
+      rebuildBrick();
+      updateAll();
+      refreshTree();
+    }
+    function doRebirth() {
+      if (!canRebirth()) return;
+      rebirthCount++;
+      rebirthTokens++;
+      cash = 0; totalEarned = 0; prestigeCount = 0; prestigePts = 0;
+      TREE_DEF.filter(u => u.branch !== 'rebirth').forEach(u => { levels[u.id] = 0; });
+      brickCols = 2; brickRows = 2; brickColorIndex = 0;
+      rebuildBrick();
+      updateAll();
+      refreshTree();
+    }
+    window.doPrestige = doPrestige;
+    window.doRebirth  = doRebirth;
+
+    // ================================================================
+    // SAVE / LOAD
+    // ================================================================
+    function saveGame() {
+      const data = { cash, totalEarned, prestigeCount, rebirthCount,
+        prestigePts, rebirthTokens, levels: { ...levels },
+        brickCols, brickRows, brickColorIndex };
+      localStorage.setItem('brickclicker', JSON.stringify(data));
+      document.getElementById('save-msg').textContent = 'Saved ✓ ' + new Date().toLocaleTimeString();
+    }
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem('brickclicker');
+        if (!raw) { document.getElementById('save-msg').textContent = 'No save found.'; return; }
+        const d = JSON.parse(raw);
+        cash = d.cash || 0; totalEarned = d.totalEarned || 0;
+        prestigeCount = d.prestigeCount || 0; rebirthCount = d.rebirthCount || 0;
+        prestigePts = d.prestigePts || 0; rebirthTokens = d.rebirthTokens || 0;
+        Object.assign(levels, d.levels || {});
+        brickCols = d.brickCols || 2; brickRows = d.brickRows || 2;
+        brickColorIndex = d.brickColorIndex || 0;
+        rebuildBrick();
+        updateAll();
+        refreshTree();
+        document.getElementById('save-msg').textContent = 'Loaded ✓';
+      } catch(e) { document.getElementById('save-msg').textContent = 'Load failed.'; }
+    }
+    window.saveGame = saveGame;
+    window.loadGame = loadGame;
+    setInterval(saveGame, 10000);
+
+    // ================================================================
+    // THREE.JS SETUP
+    // ================================================================
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(devicePixelRatio);
     renderer.setSize(innerWidth, innerHeight);
     renderer.xr.enabled = true;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
     document.body.appendChild(VRButton.createButton(renderer, {
-      optionalFeatures: ['hand-tracking', 'local-floor', 'bounded-floor'],
-      domOverlay: { root: document.getElementById('panel') }
+      optionalFeatures: ['hand-tracking', 'local-floor', 'bounded-floor']
     }));
-
     addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
 
-    // ---- Scene / camera / player rig ------------------------------------
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
-    scene.fog = new THREE.Fog(0x1a1a2e, 8, 22);
+    scene.background = new THREE.Color(0x0d0d1a);
+    scene.fog = new THREE.FogExp2(0x0d0d1a, 0.045);
 
-    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.01, 50);
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.01, 80);
     camera.position.set(0, 1.6, 0);
-
+    camera.rotation.x = -0.18; // look slightly downward into the tree
     const player = new THREE.Group();
+    player.position.set(0, 0, 4.5); // start behind the main brick, looking into the tree
     player.add(camera);
     scene.add(player);
 
-    // ---- Lights ---------------------------------------------------------
-    scene.add(new THREE.AmbientLight(0x334466, 1.5));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.8);
-    sun.position.set(3, 6, 4);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    // ---- Lights ----
+    scene.add(new THREE.AmbientLight(0x223366, 2));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+    sun.position.set(4, 8, 2); sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.far = 60;
     scene.add(sun);
-    const fill = new THREE.PointLight(0x4488ff, 1.2, 8);
-    fill.position.set(-2, 2, 1);
-    scene.add(fill);
+    scene.add(new THREE.PointLight(0x4488ff, 1, 12, 2));
 
-    // ---- Floor ----------------------------------------------------------
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x22223a, roughness: .95 });
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(10, 48).rotateX(-Math.PI/2), floorMat);
+    // ---- Floor (large studded plate) ----
+    const floorGeo = new THREE.PlaneGeometry(40, 40);
+    const floor = new THREE.Mesh(floorGeo,
+      new THREE.MeshStandardMaterial({ color: 0x2d6a2d, roughness: 0.9 }));
+    floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // ---- Roblox-style brick builder ------------------------------------
-    // A Lego brick: flat body + a grid of cylindrical studs on top.
-    const STUD_R  = 0.095;
-    const STUD_H  = 0.07;
-    const STUD_SEG = 18;
+    // Subtle stud grid on floor
+    const studFloorGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12);
+    const studFloorMat = new THREE.MeshStandardMaterial({ color: 0x3a7a3a, roughness: 0.8 });
+    for (let x = -18; x <= 18; x += 1.2) {
+      for (let z = -18; z <= 18; z += 1.2) {
+        const s = new THREE.Mesh(studFloorGeo, studFloorMat);
+        s.position.set(x, 0.025, z);
+        s.receiveShadow = true;
+        scene.add(s);
+      }
+    }
 
-    function makeBrick(cols, rows, unitW, unitD, height, color) {
+    // ================================================================
+    // BRICK BUILDER
+    // ================================================================
+    const STUD_R = 0.085, STUD_H = 0.065, STUD_SEG = 14;
+    const UNIT = 0.22, BRICK_H = 0.18;
+    const BRICK_COLORS = [0xe74c3c,0x3498db,0x2ecc71,0xf39c12,0x9b59b6,0x1abc9c,0xe67e22,0xffffff];
+
+    function makeBrick(cols, rows, color, small) {
+      const sc = small ? 0.55 : 1;
+      const w = cols * UNIT * sc, d = rows * UNIT * sc, h = BRICK_H * sc;
       const group = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({
-        color, roughness: .35, metalness: .08
-      });
-
-      // Body
-      const body = new THREE.Mesh(
-        new THREE.BoxGeometry(cols * unitW, height, rows * unitD),
-        mat
-      );
-      body.castShadow = true;
-      body.receiveShadow = true;
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: .3, metalness: .05 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      body.castShadow = true; body.receiveShadow = true;
       group.add(body);
-
-      // Studs on top
-      const studGeo = new THREE.CylinderGeometry(STUD_R, STUD_R, STUD_H, STUD_SEG);
-      const topY = height / 2 + STUD_H / 2;
-      for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-          const sx = (c - (cols - 1) / 2) * unitW;
-          const sz = (r - (rows - 1) / 2) * unitD;
-          const stud = new THREE.Mesh(studGeo, mat);
-          stud.position.set(sx, topY, sz);
-          stud.castShadow = true;
-          group.add(stud);
-        }
+      const sg = new THREE.CylinderGeometry(STUD_R * sc, STUD_R * sc, STUD_H * sc, STUD_SEG);
+      const topY = h / 2 + (STUD_H * sc) / 2;
+      for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
+        const stud = new THREE.Mesh(sg, mat);
+        stud.position.set((c-(cols-1)/2)*UNIT*sc, topY, (r-(rows-1)/2)*UNIT*sc);
+        stud.castShadow = true;
+        group.add(stud);
       }
       return group;
     }
 
-    // ---- The main clickable brick ----------------------------------------
-    let brickCols = 2, brickRows = 2;
-    const UNIT = 0.24;
-    const BRICK_H = 0.22;
-    const BRICK_COLORS = [
-      0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6,
-      0x1abc9c, 0xe67e22, 0xecf0f1
-    ];
-    let brickColorIndex = 0;
+    // ---- Main brick ----
     let brickGroup = null;
-    const BRICK_POS = new THREE.Vector3(0, 1.15, -1.1);
-
+    const BRICK_POS = new THREE.Vector3(0, BRICK_H / 2, 1.2); // in world space, the player starts at z=3 so this is ~1.8m ahead
     function rebuildBrick() {
       if (brickGroup) scene.remove(brickGroup);
-      brickGroup = makeBrick(
-        brickCols, brickRows, UNIT, UNIT, BRICK_H,
-        BRICK_COLORS[brickColorIndex % BRICK_COLORS.length]
-      );
+      brickGroup = makeBrick(brickCols, brickRows, BRICK_COLORS[brickColorIndex % BRICK_COLORS.length], false);
       brickGroup.position.copy(BRICK_POS);
+      brickGroup.position.y = BRICK_H / 2;
       scene.add(brickGroup);
     }
     rebuildBrick();
 
-    // ---- Economy --------------------------------------------------------
-    let cash    = 0;
-    let totalEarned = 0;
+    function getBrickMeshes() {
+      const m = []; brickGroup.traverse(o => { if (o.isMesh) m.push(o); }); return m;
+    }
 
-    const upgrades = [
-      {
-        id: 'click1',  name: 'Better Finger',
-        desc: 'Each click earns more c$.',
-        baseCost: 10,  costMult: 1.6,  maxLevel: 20,
-        level: 0,
-        effect: () => {} // handled in clickValue()
-      },
-      {
-        id: 'auto1',   name: 'Auto Tapper',
-        desc: 'Taps the brick once/sec automatically.',
-        baseCost: 50,  costMult: 1.8,  maxLevel: 15,
-        level: 0,
-        effect: () => {}
-      },
-      {
-        id: 'mult1',   name: 'Golden Stud',
-        desc: 'Multiplies ALL earnings.',
-        baseCost: 200, costMult: 2.2,  maxLevel: 10,
-        level: 0,
-        effect: () => {}
-      },
-      {
-        id: 'size1',   name: 'Bigger Brick',
-        desc: 'Brick grows more studs!',
-        baseCost: 500, costMult: 3.0,  maxLevel: 6,
-        level: 0,
-        effect: (lvl) => {
-          brickCols = 2 + lvl;
-          brickRows = 2 + lvl;
-          rebuildBrick();
+    // ================================================================
+    // UPGRADE TREE LAYOUT & 3D BRICKS
+    // ================================================================
+    // Layout: tree grows along +X (depth), spread along Z
+    // Root (main brick) is at X=0. Each depth tier is spaced 1.8m apart.
+    // Siblings are spread along Z.
+
+    const DEPTH_SPACING = 1.9;   // grows along -Z (forward from player)
+    const VERT_SPACING  = 0.9;   // spreads along X
+    const BRANCH_OFFSETS = { click: -4, auto: 0, mult: 4, special: 8, prestige: -8, rebirth: 12 };
+
+    function buildPositions() {
+      // BFS to assign grid positions
+      const pos = {}; // id -> {x, z}
+      const roots = TREE_DEF.filter(u => !u.parent);
+      const byParent = {};
+      TREE_DEF.forEach(u => {
+        if (!byParent[u.parent]) byParent[u.parent] = [];
+        byParent[u.parent].push(u);
+      });
+
+      function place(u, depth, xBase) {
+        // Tree grows along -Z, branches spread along X
+        const z = -(depth * DEPTH_SPACING + 2.5);
+        const children = byParent[u.id] || [];
+        const totalW = Math.max(0, children.length - 1) * VERT_SPACING;
+        let xOff = xBase - totalW / 2;
+        pos[u.id] = { x: xBase, z };
+        children.forEach((c, i) => {
+          place(c, depth + 1, xOff + i * VERT_SPACING);
+        });
+      }
+
+      // Place each root branch
+      roots.forEach(u => {
+        const xBase = BRANCH_OFFSETS[u.branch] || 0;
+        place(u, 0, xBase);
+      });
+      return pos;
+    }
+
+    const nodePositions = buildPositions();
+
+    // 3D upgrade bricks in scene
+    const nodeMeshes = {}; // id -> { group, meshes, labelTex, labelCtx }
+    const nodeLines  = []; // THREE.Line for connections
+
+    function makeLabel(u) {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 128;
+      const ctx = c.getContext('2d');
+      return { canvas: c, ctx };
+    }
+
+    function drawLabel(ctx, canvas, u, canAfford) {
+      ctx.clearRect(0, 0, 256, 128);
+      const col = '#' + u.color.toString(16).padStart(6,'0');
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.roundRect(2, 2, 252, 124, 10);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 22px system-ui';
+      ctx.fillText(u.name, 8, 30);
+      ctx.font = '14px system-ui';
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.fillText(u.desc, 8, 52);
+      const lvl = levels[u.id];
+      const maxed = lvl >= u.maxLvl;
+      ctx.font = 'bold 18px system-ui';
+      ctx.fillStyle = maxed ? '#aaa' : (canAfford ? '#f5d020' : '#ff6b6b');
+      ctx.fillText(maxed ? 'MAXED' : 'c$' + fmt(upgCost(u)), 8, 76);
+      ctx.fillStyle = 'rgba(255,255,255,.4)';
+      ctx.font = '13px system-ui';
+      ctx.fillText('Lv ' + lvl + '/' + u.maxLvl, 8, 100);
+      if (u.requirePres) ctx.fillText('⭐ Pres.' + u.requirePres + ' req', 100, 100);
+      if (u.requireReb)  ctx.fillText('🔥 Reb.' + u.requireReb + ' req', 100, 100);
+    }
+
+    function buildTreeMeshes() {
+      // Clear old
+      Object.values(nodeMeshes).forEach(n => scene.remove(n.group));
+      for (const id in nodeMeshes) delete nodeMeshes[id];
+      nodeLines.forEach(l => scene.remove(l));
+      nodeLines.length = 0;
+
+      TREE_DEF.forEach(u => {
+        const p = nodePositions[u.id];
+        if (!p) return;
+
+        const group = makeBrick(1, 1, u.color, true);
+        group.position.set(p.x, BRICK_H * 0.55 / 2, p.z);
+        group.rotation.y = Math.random() * 0.3 - 0.15;
+
+        // Label plane
+        const { canvas, ctx } = makeLabel(u);
+        drawLabel(ctx, canvas, u, false);
+        const tex = new THREE.CanvasTexture(canvas);
+        const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.38, 0.19),
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+        );
+        plane.position.set(0, BRICK_H * 0.55 + 0.14, 0);
+        plane.rotation.y = group.rotation.y; // face same way as brick
+        group.add(plane);
+
+        const meshes = [];
+        group.traverse(o => { if (o.isMesh && o !== plane) meshes.push(o); });
+
+        scene.add(group);
+        nodeMeshes[u.id] = { group, meshes, tex, ctx, canvas, plane };
+
+        // Connection line to parent
+        if (u.parent && nodePositions[u.parent]) {
+          const pp = nodePositions[u.parent];
+          const pts = [
+            new THREE.Vector3(pp.x, 0.05, pp.z),
+            new THREE.Vector3(p.x,  0.05, p.z)
+          ];
+          const line = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(pts),
+            new THREE.LineBasicMaterial({ color: 0x444466, opacity: 0.6, transparent: true })
+          );
+          scene.add(line);
+          nodeLines.push(line);
         }
-      },
-      {
-        id: 'color1',  name: 'New Paint',
-        desc: 'Changes the brick color.',
-        baseCost: 150, costMult: 1.5,  maxLevel: 7,
-        level: 0,
-        effect: (lvl) => {
-          brickColorIndex = lvl;
-          rebuildBrick();
+        // Line from root to branch roots
+        if (!u.parent) {
+          const pts = [
+            new THREE.Vector3(0, 0.05, 0),
+            new THREE.Vector3(p.x, 0.05, p.z)
+          ];
+          const line = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(pts),
+            new THREE.LineBasicMaterial({ color: 0x334455, opacity: 0.5, transparent: true })
+          );
+          scene.add(line);
+          nodeLines.push(line);
         }
-      },
-    ];
+      });
+    }
+    buildTreeMeshes();
 
-    function upgCost(u) {
-      return Math.floor(u.baseCost * Math.pow(u.costMult, u.level));
+    function refreshTree() {
+      TREE_DEF.forEach(u => {
+        const nm = nodeMeshes[u.id];
+        if (!nm) return;
+        const unlocked = isUnlocked(u);
+        const canAfford = cash >= upgCost(u) && levels[u.id] < u.maxLvl;
+        drawLabel(nm.ctx, nm.canvas, u, canAfford);
+        nm.tex.needsUpdate = true;
+        // Dim locked nodes
+        nm.group.traverse(o => {
+          if (o.isMesh && o !== nm.plane) {
+            o.material.opacity = unlocked ? 1 : 0.2;
+            o.material.transparent = !unlocked;
+          }
+        });
+      });
     }
 
-    function clickMultiplier() {
-      const g = upgrades.find(u => u.id === 'mult1');
-      return 1 + g.level * 0.5;
+    function getAllUpgradeMeshes() {
+      const arr = [];
+      Object.values(nodeMeshes).forEach(n => arr.push(...n.meshes));
+      return arr;
     }
 
-    function clickValue() {
-      const c = upgrades.find(u => u.id === 'click1');
-      return (1 + c.level) * clickMultiplier();
-    }
+    // ================================================================
+    // FLOATING BILLBOARD HUD
+    // ================================================================
+    const billCanvas = document.createElement('canvas');
+    billCanvas.width = 512; billCanvas.height = 256;
+    const billCtx = billCanvas.getContext('2d');
+    const billTex = new THREE.CanvasTexture(billCanvas);
+    const billboard = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.2, 0.6),
+      new THREE.MeshBasicMaterial({ map: billTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })
+    );
+    // Follow player: attach to player group, offset ahead and up
+    billboard.position.set(0, 2.4, -1.5);
+    player.add(billboard);
 
-    function autoRate() { // c$ per second
-      const a = upgrades.find(u => u.id === 'auto1');
-      return a.level * clickValue() * clickMultiplier() * 0.8;
-    }
-
-    function earn(amount, screenX, screenY) {
-      cash += amount;
-      totalEarned += amount;
-      updateHUD();
-      if (screenX !== undefined) spawnFloater(amount, screenX, screenY);
-    }
-
-    // ---- HUD & floaters -------------------------------------------------
-    const cashDisplay = document.getElementById('cash-display');
-    const cpsDisplay  = document.getElementById('cps-display');
-
-    function fmt(n) {
-      if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
-      if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
-      if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
-      return Math.floor(n).toString();
-    }
-
-    function updateHUD() {
-      cashDisplay.textContent = 'c$' + fmt(cash);
+    function updateBillboard() {
+      billCtx.clearRect(0, 0, 512, 256);
+      billCtx.fillStyle = 'rgba(10,10,30,0.82)';
+      billCtx.beginPath();
+      billCtx.roundRect(4, 4, 504, 248, 20);
+      billCtx.fill();
+      billCtx.fillStyle = '#f5d020';
+      billCtx.font = 'bold 52px system-ui';
+      billCtx.fillText('c$' + fmt(cash), 20, 70);
       const cps = autoRate();
-      cpsDisplay.textContent = cps > 0 ? fmt(cps) + '/s' : '';
-      renderUpgrades();
+      if (cps > 0) {
+        billCtx.fillStyle = 'rgba(255,255,255,.55)';
+        billCtx.font = '28px system-ui';
+        billCtx.fillText(fmt(cps) + '/sec', 20, 110);
+      }
+      billCtx.fillStyle = '#d2b4de';
+      billCtx.font = 'bold 26px system-ui';
+      billCtx.fillText('⭐ ' + prestigeCount + '  🔥 ' + rebirthCount, 20, 155);
+      billCtx.fillStyle = 'rgba(255,255,255,.35)';
+      billCtx.font = '20px system-ui';
+      billCtx.fillText('Total: c$' + fmt(totalEarned), 20, 190);
+      const pm = presMultiplier(), rm = rebMultiplier();
+      if (pm > 1 || rm > 1) {
+        billCtx.fillText('Mult: ×' + fmt(pm * rm), 20, 216);
+      }
+      billTex.needsUpdate = true;
+    }
+
+    // ================================================================
+    // HUD (PC sidebar)
+    // ================================================================
+    function updateAll() {
+      const sCash = document.getElementById('s-cash');
+      const sCps  = document.getElementById('s-cps');
+      const sPres = document.getElementById('s-pres');
+      const sReb  = document.getElementById('s-reb');
+      const btnPres = document.getElementById('btn-prestige');
+      const btnReb  = document.getElementById('btn-rebirth');
+      const presReq = document.getElementById('pres-req');
+      const rebReq  = document.getElementById('reb-req');
+      if (sCash) sCash.textContent = fmt(cash);
+      if (sCps)  sCps.textContent  = fmt(autoRate()) + '/s';
+      if (sPres) sPres.textContent = prestigeCount;
+      if (sReb)  sReb.textContent  = rebirthCount;
+      if (btnPres) btnPres.disabled = !canPrestige();
+      if (btnReb)  btnReb.disabled  = !canRebirth();
+      if (presReq) presReq.textContent = canPrestige() ? 'Ready!' : 'Need c$' + fmt(PRESTIGE_THRESHOLD) + ' total';
+      if (rebReq)  rebReq.textContent  = canRebirth()  ? 'Ready!' : prestigeCount + '/' + REBIRTH_THRESHOLD + ' prestiges';
+      refreshTree();
+    }
+
+    // ================================================================
+    // CLICK / EARN
+    // ================================================================
+    function onBrickHit(sx, sy) {
+      const v = clickValue();
+      cash += v; totalEarned += v;
+      updateAll();
+      if (sx !== undefined) spawnFloater(v, sx, sy);
+      brickGroup.scale.setScalar(1.08);
+      // Brick color upgrades
+      TREE_DEF.filter(u => u.type === 'brick_grow').forEach(u => {
+        const tgt = 2 + Math.floor(
+          TREE_DEF.filter(u2 => u2.type === 'brick_grow')
+            .reduce((acc, u2) => acc + levels[u2.id] * u2.val, 0)
+        );
+        if (brickCols !== tgt) { brickCols = brickRows = tgt; rebuildBrick(); }
+      });
     }
 
     function spawnFloater(amount, x, y) {
@@ -335,103 +657,74 @@
       el.addEventListener('animationend', () => el.remove());
     }
 
-    // ---- Upgrade panel --------------------------------------------------
-    const panel = document.getElementById('panel');
-
-    function renderUpgrades() {
-      // rebuild buttons each tick (simple approach)
-      const existing = panel.querySelectorAll('.upg-btn');
-      existing.forEach((el, i) => {
-        const u = upgrades[i];
-        if (!u) return;
-        const cost = upgCost(u);
-        const maxed = u.level >= u.maxLevel;
-        el.disabled = maxed || cash < cost;
-        el.querySelector('.u-cost').textContent = maxed ? 'MAXED' : 'c$' + fmt(cost);
-        el.querySelector('.u-level').textContent = maxed ? '' : `${u.level}/${u.maxLevel}`;
-      });
+    function buyUpgrade(u) {
+      if (!isUnlocked(u)) return;
+      const cost = upgCost(u);
+      if (cash < cost || levels[u.id] >= u.maxLvl) return;
+      cash -= cost;
+      levels[u.id]++;
+      // Apply effects
+      if (u.type === 'brick_grow') {
+        const total = TREE_DEF.filter(u2 => u2.type === 'brick_grow')
+          .reduce((acc, u2) => acc + levels[u2.id] * u2.val, 0);
+        brickCols = brickRows = 2 + Math.floor(total);
+        rebuildBrick();
+      }
+      updateAll();
+      // Pop animation
+      const nm = nodeMeshes[u.id];
+      if (nm) nm.group.scale.setScalar(1.2);
     }
 
-    const BRICK_BG = [
-      '#c0392b','#2980b9','#27ae60','#d35400','#8e44ad','#16a085','#2c3e50','#7f8c8d'
-    ];
-
-    function buildUpgradePanel() {
-      upgrades.forEach((u, i) => {
-        const btn = document.createElement('button');
-        btn.className = 'upg-btn';
-        const bg = BRICK_BG[i % BRICK_BG.length];
-        const dark = bg; // shadow handled by CSS
-        btn.innerHTML = `
-          <div class="upg-brick" style="background:${bg}">
-            <div class="upg-studs">
-              <div class="upg-stud"></div>
-              <div class="upg-stud"></div>
-              <div class="upg-stud"></div>
-              <div class="upg-stud"></div>
-            </div>
-            <div class="u-name">${u.name}</div>
-            <div class="u-desc">${u.desc}</div>
-            <div class="u-row">
-              <span class="u-cost"></span>
-              <span class="u-level"></span>
-            </div>
-          </div>
-        `;
-        btn.addEventListener('click', () => {
-          const cost = upgCost(u);
-          if (cash < cost || u.level >= u.maxLevel) return;
-          cash -= cost;
-          u.level++;
-          u.effect(u.level);
-          updateHUD();
-        });
-        panel.appendChild(btn);
-      });
-      renderUpgrades();
-    }
-    buildUpgradePanel();
-    updateHUD();
-
-    // ---- Raycasting: what counts as hitting the brick --------------------
+    // ================================================================
+    // RAYCASTING
+    // ================================================================
     const raycaster = new THREE.Raycaster();
+    const tempMatrix = new THREE.Matrix4();
 
-    function getBrickMeshes() {
-      const meshes = [];
-      brickGroup.traverse(o => { if (o.isMesh) meshes.push(o); });
-      return meshes;
-    }
-
-    function onBrickHit(screenX, screenY) {
-      earn(clickValue(), screenX, screenY);
-      // Quick scale punch animation
-      brickGroup.scale.setScalar(1.07);
-    }
-
-    // ---- VR Controllers & hands -----------------------------------------
+    // ================================================================
+    // VR CONTROLLERS & HANDS
+    // ================================================================
     const controllerModelFactory = new XRControllerModelFactory();
     const handModelFactory = new XRHandModelFactory();
     const controllers = [];
-    const tempMatrix = new THREE.Matrix4();
+
+    renderer.xr.addEventListener('sessionstart', () => {
+      document.getElementById('sidebar').style.display = 'none';
+      billboard.visible = true;
+    });
+    renderer.xr.addEventListener('sessionend', () => {
+      document.getElementById('sidebar').style.display = '';
+      billboard.visible = false;
+    });
+    billboard.visible = false; // hide on PC by default
 
     function buildController(index) {
       const ctrl = renderer.xr.getController(index);
       const lineGeo = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-1)
       ]);
-      const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({
-        color: 0xffffff, opacity: .4, transparent: true
-      }));
-      line.scale.z = 4;
+      const line = new THREE.Line(lineGeo,
+        new THREE.LineBasicMaterial({ color: 0xffffff, opacity: .4, transparent: true }));
+      line.scale.z = 5;
       ctrl.add(line);
 
       ctrl.addEventListener('selectstart', () => {
-        // Raycast from controller
         tempMatrix.identity().extractRotation(ctrl.matrixWorld);
         raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
         raycaster.ray.direction.set(0,0,-1).applyMatrix4(tempMatrix);
-        const hits = raycaster.intersectObjects(getBrickMeshes(), false);
-        if (hits.length) onBrickHit();
+
+        // Main brick
+        const bHits = raycaster.intersectObjects(getBrickMeshes(), false);
+        if (bHits.length) { onBrickHit(); return; }
+
+        // Upgrade bricks
+        for (const u of TREE_DEF) {
+          const nm = nodeMeshes[u.id];
+          if (!nm) continue;
+          const hits = raycaster.intersectObjects(nm.meshes, false);
+          if (hits.length) { buyUpgrade(u); return; }
+        }
       });
 
       player.add(ctrl);
@@ -446,38 +739,62 @@
     buildController(0);
     buildController(1);
 
-    // ---- PC controls ----------------------------------------------------
+    // ================================================================
+    // PC CONTROLS
+    // ================================================================
     const controls  = new PointerLockControls(camera, renderer.domElement);
     const crosshair = document.getElementById('crosshair');
     const keys = {};
     const screenC = new THREE.Vector2(0, 0);
-    const SPEED = 2.5, DEAD = 0.2;
+    const SPEED = 3.0;
 
-    controls.addEventListener('lock',   () => crosshair.style.display = 'block');
-    controls.addEventListener('unlock', () => crosshair.style.display = 'none');
+    controls.addEventListener('lock',   () => { crosshair.style.display = 'block'; billboard.visible = true; });
+    controls.addEventListener('unlock', () => { crosshair.style.display = 'none';  billboard.visible = false; });
+
+    addEventListener('keydown', e => { keys[e.code] = true; });
+    addEventListener('keyup',   e => { keys[e.code] = false; });
 
     renderer.domElement.addEventListener('click', () => {
       if (renderer.xr.isPresenting) return;
       if (!controls.isLocked) { controls.lock(); return; }
       raycaster.setFromCamera(screenC, camera);
-      const hits = raycaster.intersectObjects(getBrickMeshes(), false);
-      if (hits.length) {
-        // Map hit to screen center for floater
-        const p = hits[0].point.clone().project(camera);
-        const sx = ( p.x * .5 + .5) * innerWidth;
-        const sy = (-p.y * .5 + .5) * innerHeight;
-        onBrickHit(sx, sy);
+      // Main brick
+      const bHits = raycaster.intersectObjects(getBrickMeshes(), false);
+      if (bHits.length) {
+        const p = bHits[0].point.clone().project(camera);
+        onBrickHit((.5 + p.x * .5) * innerWidth, (.5 - p.y * .5) * innerHeight);
+        return;
+      }
+      // Upgrades
+      const uMeshes = getAllUpgradeMeshes();
+      const uHits = raycaster.intersectObjects(uMeshes, false);
+      if (uHits.length) {
+        const hit = uHits[0].object;
+        for (const u of TREE_DEF) {
+          const nm = nodeMeshes[u.id];
+          if (nm && nm.meshes.includes(hit)) { buyUpgrade(u); return; }
+        }
       }
     });
 
-    addEventListener('keydown', e => { keys[e.code] = true; });
-    addEventListener('keyup',   e => { keys[e.code] = false; });
+    function pcUpdate(dt) {
+      if (renderer.xr.isPresenting || !controls.isLocked) return;
+      const s = SPEED * dt;
+      if (keys['KeyW']||keys['ArrowUp'])    controls.moveForward(s);
+      if (keys['KeyS']||keys['ArrowDown'])  controls.moveForward(-s);
+      if (keys['KeyA']||keys['ArrowLeft'])  controls.moveRight(-s);
+      if (keys['KeyD']||keys['ArrowRight']) controls.moveRight(s);
+      if (keys['KeyQ']) player.position.y += s * 0.5;
+      if (keys['KeyE']) player.position.y -= s * 0.5;
+    }
 
-    // Joystick locomotion (VR) -------------------------------------------
+    // ================================================================
+    // VR LOCOMOTION
+    // ================================================================
     const fwd = new THREE.Vector3(), right = new THREE.Vector3();
     const headQ = new THREE.Quaternion(), headP = new THREE.Vector3();
     let canTurn = true;
-    const TURN = Math.PI / 6;
+    const TURN = Math.PI / 6, DEAD = 0.2;
 
     function vrLocomotion(dt) {
       const session = renderer.xr.getSession();
@@ -498,85 +815,83 @@
           if (Math.abs(x) < 0.6) { canTurn = true; continue; }
           if (!canTurn) continue;
           canTurn = false;
-          const angle = x > 0 ? -TURN : TURN;
           camera.getWorldPosition(headP);
           player.position.sub(headP);
-          player.position.applyAxisAngle(new THREE.Vector3(0,1,0), angle);
+          const a = x > 0 ? -TURN : TURN;
+          player.position.applyAxisAngle(new THREE.Vector3(0,1,0), a);
           player.position.add(headP);
-          player.rotateY(angle);
+          player.rotateY(a);
         }
       }
     }
 
-    // PC movement ---------------------------------------------------------
-    function pcUpdate(dt) {
-      if (renderer.xr.isPresenting || !controls.isLocked) return;
-      const s = SPEED * dt;
-      if (keys['KeyW'] || keys['ArrowUp'])    controls.moveForward(s);
-      if (keys['KeyS'] || keys['ArrowDown'])  controls.moveForward(-s);
-      if (keys['KeyA'] || keys['ArrowLeft'])  controls.moveRight(-s);
-      if (keys['KeyD'] || keys['ArrowRight']) controls.moveRight(s);
-    }
-
-    // ---- Brick hover highlight ------------------------------------------
-    const highlightColor = new THREE.Color(0xffffff);
-    let lastHovered = false;
-
+    // ================================================================
+    // HOVER HIGHLIGHT
+    // ================================================================
+    let lastHover = null;
     function updateHover() {
       if (renderer.xr.isPresenting) return;
       raycaster.setFromCamera(screenC, camera);
-      const hits = raycaster.intersectObjects(getBrickMeshes(), false);
-      const hovered = hits.length > 0;
-      if (hovered !== lastHovered) {
-        brickGroup.traverse(o => {
-          if (o.isMesh) {
-            o.material = o.material.clone();
-            o.material.emissive.setHex(hovered ? 0x223344 : 0x000000);
-          }
-        });
-        lastHovered = hovered;
-        renderer.domElement.style.cursor = (hovered && controls.isLocked) ? 'pointer' : '';
+      const hits = raycaster.intersectObjects([...getBrickMeshes(), ...getAllUpgradeMeshes()], false);
+      const newHover = hits.length ? hits[0].object : null;
+      if (newHover !== lastHover) {
+        if (lastHover) lastHover.material.emissive?.setHex(0x000000);
+        if (newHover)  newHover.material.emissive?.setHex(0x223344);
+        lastHover = newHover;
       }
     }
 
-    // ---- Auto-click ticker ---------------------------------------------
-    let autoAccum = 0;
+    // ================================================================
+    // SPRING ANIMATIONS
+    // ================================================================
+    function springs(dt) {
+      function spring(group) {
+        const s = group.scale.x;
+        if (Math.abs(s - 1) > 0.001)
+          group.scale.setScalar(s + (1 - s) * Math.min(1, dt * 13));
+      }
+      if (brickGroup) spring(brickGroup);
+      Object.values(nodeMeshes).forEach(n => spring(n.group));
 
-    // ---- Brick scale spring back ----------------------------------------
-    function brickSpring(dt) {
-      const s = brickGroup.scale.x;
-      if (Math.abs(s - 1) > 0.001) {
-        brickGroup.scale.setScalar(s + (1 - s) * Math.min(1, dt * 12));
+      // Billboard always faces camera
+      if (billboard.visible) {
+        billboard.quaternion.copy(camera.quaternion);
       }
     }
 
-    // ---- Render loop ---------------------------------------------------
+    // ================================================================
+    // RENDER LOOP
+    // ================================================================
     const clock = new THREE.Clock();
+    let refreshCounter = 0;
     renderer.setAnimationLoop(() => {
       const dt = Math.min(clock.getDelta(), 0.05);
-
       vrLocomotion(dt);
       pcUpdate(dt);
-      brickSpring(dt);
+      springs(dt);
       updateHover();
+      updateBillboard();
 
-      // Gentle idle rotation when not in VR
-      if (!renderer.xr.isPresenting) {
-        brickGroup.rotation.y += dt * 0.4;
-      }
+      // Idle brick rotation when not in VR
+      if (!renderer.xr.isPresenting && brickGroup) brickGroup.rotation.y += dt * 0.5;
 
-      // Auto tapper
+      // Auto income
       autoAccum += dt;
-      const rate = autoRate();
-      if (rate > 0 && autoAccum >= 1) {
+      if (autoAccum >= 1) {
+        const r = autoRate();
+        if (r > 0) { cash += r; totalEarned += r; }
         autoAccum -= 1;
-        earn(rate);
-        updateHUD();
+        refreshCounter++;
+        if (refreshCounter >= 2) { updateAll(); refreshCounter = 0; }
       }
 
       renderer.render(scene, camera);
     });
 
+    // Init
+    loadGame();
+    updateAll();
+    updateBillboard();
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   </script>
 </body>
