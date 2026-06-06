@@ -86,77 +86,101 @@
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
     // ================================================================
-    // UPGRADE TREE DEFINITION
+    // UPGRADE TREE DEFINITION — single root, everything branches from it
     // ================================================================
-    // type: click_add, click_mult, auto_add, auto_mult, global_mult, special
-    // parent: id of parent node (null = branches from root)
-    // branch: 'click'|'auto'|'mult'|'prestige'|'rebirth'
     const TREE_DEF = [
-      // ---- CLICK BRANCH (top) ----
-      { id:'c1', name:'Better Finger',  desc:'+1 c$/click',         parent:null,  branch:'click', baseCost:10,    costMult:1.5, maxLvl:20, type:'click_add',  val:1,    color:0xe74c3c },
-      { id:'c2', name:'Steel Claw',     desc:'×2 click value',      parent:'c1',  branch:'click', baseCost:80,    costMult:1.8, maxLvl:15, type:'click_mult', val:2,    color:0xc0392b },
-      { id:'c3', name:'Robo Arm',       desc:'×5 click value',      parent:'c2',  branch:'click', baseCost:1e3,   costMult:2.0, maxLvl:10, type:'click_mult', val:5,    color:0x922b21 },
-      { id:'c4', name:'Quantum Fist',   desc:'×20 click value',     parent:'c3',  branch:'click', baseCost:50e3,  costMult:2.5, maxLvl:8,  type:'click_mult', val:20,   color:0xff6b6b },
-      { id:'c5', name:'God Touch',      desc:'×100 click value',    parent:'c4',  branch:'click', baseCost:5e6,   costMult:3.0, maxLvl:6,  type:'click_mult', val:100,  color:0xff0000 },
+      // ══ ROOT ══ (the trunk — all branches connect here)
+      { id:'root', name:'The Brick',    desc:'Tap me to earn c$!',  parent:null,  branch:'root',    baseCost:0,    costMult:1,   maxLvl:0,  type:'none',       val:0,    color:0xe74c3c },
 
-      { id:'c6', name:'Double Tap',     desc:'×2 hits per click',   parent:'c1',  branch:'click', baseCost:200,   costMult:2.0, maxLvl:5,  type:'click_mult', val:2,    color:0xe91e63 },
-      { id:'c7', name:'Triple Strike',  desc:'×3 hits per click',   parent:'c6',  branch:'click', baseCost:5e3,   costMult:2.2, maxLvl:5,  type:'click_mult', val:3,    color:0xc2185b },
-      { id:'c8', name:'Combo God',      desc:'×10 hits per click',  parent:'c7',  branch:'click', baseCost:500e3, costMult:3.0, maxLvl:4,  type:'click_mult', val:10,   color:0x880e4f },
+      // ══ TIER 1 BRANCHES — sprout from root ══
+      { id:'clk',  name:'Click',        desc:'Tap power upgrades',  parent:'root',branch:'click',   baseCost:5,    costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0xe74c3c },
+      { id:'aut',  name:'Auto',         desc:'Passive income',      parent:'root',branch:'auto',    baseCost:25,   costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0x2980b9 },
+      { id:'mul',  name:'Multiply',     desc:'Earnings multipliers',parent:'root',branch:'mult',    baseCost:100,  costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0xf39c12 },
+      { id:'spc',  name:'Special',      desc:'Unique upgrades',     parent:'root',branch:'special', baseCost:300,  costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0x9b59b6 },
+      { id:'prs',  name:'Prestige',     desc:'Unlock after prestige',parent:'root',branch:'prestige',baseCost:1,  costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0xf8c471, requirePres:1 },
+      { id:'reb',  name:'Rebirth',      desc:'Unlock after rebirth',parent:'root',branch:'rebirth', baseCost:1,   costMult:1,   maxLvl:1,  type:'none',       val:0,    color:0xec407a, requireReb:1 },
 
-      { id:'c9',  name:'Sharp Edge',    desc:'+5 c$/click',         parent:'c2',  branch:'click', baseCost:500,   costMult:1.6, maxLvl:15, type:'click_add',  val:5,    color:0xff7043 },
-      { id:'c10', name:'Crystal Nail',  desc:'+20 c$/click',        parent:'c9',  branch:'click', baseCost:8e3,   costMult:1.8, maxLvl:12, type:'click_add',  val:20,   color:0xbf360c },
-      { id:'c11', name:'Diamond Spike', desc:'+100 c$/click',       parent:'c10', branch:'click', baseCost:200e3, costMult:2.0, maxLvl:10, type:'click_add',  val:100,  color:0x4fc3f7 },
-      { id:'c12', name:'Void Shard',    desc:'+1000 c$/click',      parent:'c11', branch:'click', baseCost:10e6,  costMult:2.5, maxLvl:8,  type:'click_add',  val:1e3,  color:0x0288d1 },
+      // ══ CLICK BRANCH ══
+      { id:'c1', name:'Better Finger',  desc:'+1 c$/click',         parent:'clk', branch:'click',   baseCost:10,   costMult:1.5, maxLvl:20, type:'click_add',  val:1,    color:0xff6b6b },
+      { id:'c2', name:'Steel Claw',     desc:'×2 click value',      parent:'c1',  branch:'click',   baseCost:80,   costMult:1.8, maxLvl:15, type:'click_mult', val:2,    color:0xc0392b },
+      { id:'c3', name:'Robo Arm',       desc:'×5 click value',      parent:'c2',  branch:'click',   baseCost:1e3,  costMult:2.0, maxLvl:10, type:'click_mult', val:5,    color:0x922b21 },
+      { id:'c4', name:'Quantum Fist',   desc:'×20 click value',     parent:'c3',  branch:'click',   baseCost:50e3, costMult:2.5, maxLvl:8,  type:'click_mult', val:20,   color:0xff4444 },
+      { id:'c5', name:'God Touch',      desc:'×100 click value',    parent:'c4',  branch:'click',   baseCost:5e6,  costMult:3.0, maxLvl:6,  type:'click_mult', val:100,  color:0xff0000 },
 
-      // ---- AUTO BRANCH (middle) ----
-      { id:'a1', name:'Auto Tapper',    desc:'+1 c$/sec',           parent:null,  branch:'auto',  baseCost:50,    costMult:1.5, maxLvl:20, type:'auto_add',   val:1,    color:0x2980b9 },
-      { id:'a2', name:'Tap Bot',        desc:'+5 c$/sec',           parent:'a1',  branch:'auto',  baseCost:400,   costMult:1.7, maxLvl:15, type:'auto_add',   val:5,    color:0x1a6091 },
-      { id:'a3', name:'Tap Factory',    desc:'+25 c$/sec',          parent:'a2',  branch:'auto',  baseCost:5e3,   costMult:2.0, maxLvl:12, type:'auto_add',   val:25,   color:0x154360 },
-      { id:'a4', name:'Mega Array',     desc:'+100 c$/sec',         parent:'a3',  branch:'auto',  baseCost:80e3,  costMult:2.2, maxLvl:10, type:'auto_add',   val:100,  color:0x5dade2 },
-      { id:'a5', name:'Infinite Engine',desc:'+500 c$/sec',         parent:'a4',  branch:'auto',  baseCost:5e6,   costMult:2.5, maxLvl:8,  type:'auto_add',   val:500,  color:0x85c1e9 },
+      { id:'c6', name:'Double Tap',     desc:'×2 hits per click',   parent:'c1',  branch:'click',   baseCost:200,  costMult:2.0, maxLvl:5,  type:'click_mult', val:2,    color:0xe91e63 },
+      { id:'c7', name:'Triple Strike',  desc:'×3 hits per click',   parent:'c6',  branch:'click',   baseCost:5e3,  costMult:2.2, maxLvl:5,  type:'click_mult', val:3,    color:0xc2185b },
+      { id:'c8', name:'Combo God',      desc:'×10 hits per click',  parent:'c7',  branch:'click',   baseCost:500e3,costMult:3.0, maxLvl:4,  type:'click_mult', val:10,   color:0x880e4f },
 
-      { id:'a6', name:'Click Drone',    desc:'Auto earns click val',parent:'a1',  branch:'auto',  baseCost:300,   costMult:1.8, maxLvl:10, type:'auto_click', val:1,    color:0x1abc9c },
-      { id:'a7', name:'Drone Fleet',    desc:'5× drone efficiency', parent:'a6',  branch:'auto',  baseCost:8e3,   costMult:2.0, maxLvl:8,  type:'auto_click', val:5,    color:0x148f77 },
-      { id:'a8', name:'Drone Empire',   desc:'25× drone efficiency',parent:'a7',  branch:'auto',  baseCost:500e3, costMult:2.5, maxLvl:6,  type:'auto_click', val:25,   color:0x0e6655 },
+      { id:'c9', name:'Sharp Edge',     desc:'+5 c$/click',         parent:'c2',  branch:'click',   baseCost:500,  costMult:1.6, maxLvl:15, type:'click_add',  val:5,    color:0xff7043 },
+      { id:'c10',name:'Crystal Nail',   desc:'+20 c$/click',        parent:'c9',  branch:'click',   baseCost:8e3,  costMult:1.8, maxLvl:12, type:'click_add',  val:20,   color:0xbf360c },
+      { id:'c11',name:'Diamond Spike',  desc:'+100 c$/click',       parent:'c10', branch:'click',   baseCost:200e3,costMult:2.0, maxLvl:10, type:'click_add',  val:100,  color:0x4fc3f7 },
+      { id:'c12',name:'Void Shard',     desc:'+1000 c$/click',      parent:'c11', branch:'click',   baseCost:10e6, costMult:2.5, maxLvl:8,  type:'click_add',  val:1e3,  color:0x0288d1 },
 
-      { id:'a9', name:'Super Factory',  desc:'+200 c$/sec',         parent:'a3',  branch:'auto',  baseCost:200e3, costMult:2.2, maxLvl:8,  type:'auto_add',   val:200,  color:0x27ae60 },
-      { id:'a10',name:'Hyper Factory',  desc:'+2000 c$/sec',        parent:'a9',  branch:'auto',  baseCost:10e6,  costMult:2.8, maxLvl:6,  type:'auto_add',   val:2e3,  color:0x1e8449 },
-      { id:'a11',name:'Omega Plant',    desc:'+20000 c$/sec',       parent:'a10', branch:'auto',  baseCost:1e9,   costMult:3.5, maxLvl:5,  type:'auto_add',   val:20e3, color:0x145a32 },
+      { id:'c13',name:'Thunder Strike', desc:'×3 click value',      parent:'c3',  branch:'click',   baseCost:8e3,  costMult:2.0, maxLvl:10, type:'click_mult', val:3,    color:0xffeb3b },
+      { id:'c14',name:'Lightning God',  desc:'×15 click value',     parent:'c13', branch:'click',   baseCost:300e3,costMult:2.5, maxLvl:7,  type:'click_mult', val:15,   color:0xfdd835 },
+      { id:'c15',name:'Storm Fist',     desc:'+500 c$/click',       parent:'c13', branch:'click',   baseCost:1e6,  costMult:2.2, maxLvl:8,  type:'click_add',  val:500,  color:0xf9a825 },
 
-      // ---- MULTIPLIER BRANCH (bottom) ----
-      { id:'m1', name:'Golden Stud',    desc:'×1.5 all earnings',   parent:null,  branch:'mult',  baseCost:200,   costMult:2.0, maxLvl:15, type:'global_mult',val:1.5,  color:0xf39c12 },
-      { id:'m2', name:'Diamond Stud',   desc:'×2 all earnings',     parent:'m1',  branch:'mult',  baseCost:2e3,   costMult:2.2, maxLvl:12, type:'global_mult',val:2,    color:0xb7950b },
-      { id:'m3', name:'Rainbow Stud',   desc:'×5 all earnings',     parent:'m2',  branch:'mult',  baseCost:50e3,  costMult:2.5, maxLvl:10, type:'global_mult',val:5,    color:0xf4d03f },
-      { id:'m4', name:'Cosmic Stud',    desc:'×20 all earnings',    parent:'m3',  branch:'mult',  baseCost:2e6,   costMult:3.0, maxLvl:8,  type:'global_mult',val:20,   color:0xf9e79f },
-      { id:'m5', name:'Void Stud',      desc:'×100 all earnings',   parent:'m4',  branch:'mult',  baseCost:100e6, costMult:3.5, maxLvl:6,  type:'global_mult',val:100,  color:0xfef9e7 },
+      // ══ AUTO BRANCH ══
+      { id:'a1', name:'Auto Tapper',    desc:'+1 c$/sec',           parent:'aut', branch:'auto',    baseCost:50,   costMult:1.5, maxLvl:20, type:'auto_add',   val:1,    color:0x5dade2 },
+      { id:'a2', name:'Tap Bot',        desc:'+5 c$/sec',           parent:'a1',  branch:'auto',    baseCost:400,  costMult:1.7, maxLvl:15, type:'auto_add',   val:5,    color:0x2980b9 },
+      { id:'a3', name:'Tap Factory',    desc:'+25 c$/sec',          parent:'a2',  branch:'auto',    baseCost:5e3,  costMult:2.0, maxLvl:12, type:'auto_add',   val:25,   color:0x1a6091 },
+      { id:'a4', name:'Mega Array',     desc:'+100 c$/sec',         parent:'a3',  branch:'auto',    baseCost:80e3, costMult:2.2, maxLvl:10, type:'auto_add',   val:100,  color:0x154360 },
+      { id:'a5', name:'Infinite Engine',desc:'+500 c$/sec',         parent:'a4',  branch:'auto',    baseCost:5e6,  costMult:2.5, maxLvl:8,  type:'auto_add',   val:500,  color:0x85c1e9 },
 
-      { id:'m6', name:'Lucky Brick',    desc:'×3 all earnings',     parent:'m1',  branch:'mult',  baseCost:1e3,   costMult:2.0, maxLvl:10, type:'global_mult',val:3,    color:0xe67e22 },
-      { id:'m7', name:'Fortune Brick',  desc:'×10 all earnings',    parent:'m6',  branch:'mult',  baseCost:30e3,  costMult:2.5, maxLvl:8,  type:'global_mult',val:10,   color:0xca6f1e },
-      { id:'m8', name:'Destiny Brick',  desc:'×50 all earnings',    parent:'m7',  branch:'mult',  baseCost:2e6,   costMult:3.0, maxLvl:6,  type:'global_mult',val:50,   color:0xa04000 },
+      { id:'a6', name:'Click Drone',    desc:'Auto earns click val',parent:'a1',  branch:'auto',    baseCost:300,  costMult:1.8, maxLvl:10, type:'auto_click', val:1,    color:0x1abc9c },
+      { id:'a7', name:'Drone Fleet',    desc:'×5 drone efficiency', parent:'a6',  branch:'auto',    baseCost:8e3,  costMult:2.0, maxLvl:8,  type:'auto_click', val:5,    color:0x148f77 },
+      { id:'a8', name:'Drone Empire',   desc:'×25 drone efficiency',parent:'a7',  branch:'auto',    baseCost:500e3,costMult:2.5, maxLvl:6,  type:'auto_click', val:25,   color:0x0e6655 },
 
-      { id:'m9', name:'Silver Stud',    desc:'×1.2 all earnings',   parent:'m2',  branch:'mult',  baseCost:5e3,   costMult:1.8, maxLvl:20, type:'global_mult',val:1.2,  color:0xbdc3c7 },
-      { id:'m10',name:'Platinum Stud',  desc:'×2.5 all earnings',   parent:'m9',  branch:'mult',  baseCost:200e3, costMult:2.2, maxLvl:12, type:'global_mult',val:2.5,  color:0x85929e },
+      { id:'a9', name:'Super Factory',  desc:'+200 c$/sec',         parent:'a3',  branch:'auto',    baseCost:200e3,costMult:2.2, maxLvl:8,  type:'auto_add',   val:200,  color:0x27ae60 },
+      { id:'a10',name:'Hyper Factory',  desc:'+2000 c$/sec',        parent:'a9',  branch:'auto',    baseCost:10e6, costMult:2.8, maxLvl:6,  type:'auto_add',   val:2e3,  color:0x1e8449 },
+      { id:'a11',name:'Omega Plant',    desc:'+20000 c$/sec',       parent:'a10', branch:'auto',    baseCost:1e9,  costMult:3.5, maxLvl:5,  type:'auto_add',   val:20e3, color:0x145a32 },
 
-      // ---- SPECIAL BRANCH (from root, forward) ----
-      { id:'s1', name:'Bigger Brick',   desc:'Brick grows a row',   parent:null,  branch:'special',baseCost:500,  costMult:3.0, maxLvl:6,  type:'brick_grow', val:1,    color:0x9b59b6 },
-      { id:'s2', name:'Super Brick',    desc:'Brick grows again',   parent:'s1',  branch:'special',baseCost:20e3, costMult:3.0, maxLvl:4,  type:'brick_grow', val:1,    color:0x7d3c98 },
-      { id:'s3', name:'Mega Brick',     desc:'Brick grows again',   parent:'s2',  branch:'special',baseCost:1e6,  costMult:4.0, maxLvl:3,  type:'brick_grow', val:1,    color:0x6c3483 },
-      { id:'s4', name:'Brick Aura',     desc:'Nearby bricks earn auto',parent:'s1',branch:'special',baseCost:5e3, costMult:2.5, maxLvl:8,  type:'auto_add',   val:10,   color:0xaf7ac5 },
-      { id:'s5', name:'Brick God',      desc:'×5 all, huge auto',   parent:'s3',  branch:'special',baseCost:10e6, costMult:4.0, maxLvl:5,  type:'global_mult',val:5,    color:0xd2b4de },
+      { id:'a12',name:'Speed Boost',    desc:'+10 c$/sec',          parent:'a2',  branch:'auto',    baseCost:2e3,  costMult:1.6, maxLvl:12, type:'auto_add',   val:10,   color:0x00bcd4 },
+      { id:'a13',name:'Hyper Speed',    desc:'+50 c$/sec',          parent:'a12', branch:'auto',    baseCost:40e3, costMult:1.9, maxLvl:10, type:'auto_add',   val:50,   color:0x0097a7 },
+      { id:'a14',name:'Time Warp',      desc:'+300 c$/sec',         parent:'a13', branch:'auto',    baseCost:2e6,  costMult:2.3, maxLvl:7,  type:'auto_add',   val:300,  color:0x006064 },
 
-      // ---- PRESTIGE BRANCH (unlocked after 1st prestige) ----
-      { id:'p1', name:'Prestige Boost', desc:'×2 prestige mult',    parent:null,  branch:'prestige',baseCost:1,   costMult:2.5, maxLvl:10, type:'pres_mult',  val:2,    color:0xf8c471, requirePres:1 },
-      { id:'p2', name:'Pres. Auto',     desc:'+50 c$/sec permanent',parent:'p1',  branch:'prestige',baseCost:5,   costMult:2.0, maxLvl:8,  type:'auto_add',   val:50,   color:0xf5b041, requirePres:1 },
-      { id:'p3', name:'Mega Prestige',  desc:'×5 prestige mult',    parent:'p2',  branch:'prestige',baseCost:20,  costMult:3.0, maxLvl:6,  type:'pres_mult',  val:5,    color:0xeb984e, requirePres:2 },
-      { id:'p4', name:'Pres. Storm',    desc:'×10 click on prestige',parent:'p1', branch:'prestige',baseCost:8,   costMult:2.5, maxLvl:6,  type:'click_mult', val:10,   color:0xdc7633, requirePres:2 },
-      { id:'p5', name:'Prestige God',   desc:'×100 prestige mult',  parent:'p3',  branch:'prestige',baseCost:100, costMult:4.0, maxLvl:4,  type:'pres_mult',  val:100,  color:0xca6f1e, requirePres:5 },
+      // ══ MULTIPLIER BRANCH ══
+      { id:'m1', name:'Golden Stud',    desc:'×1.5 all earnings',   parent:'mul', branch:'mult',    baseCost:200,  costMult:2.0, maxLvl:15, type:'global_mult', val:1.5, color:0xf9e79f },
+      { id:'m2', name:'Diamond Stud',   desc:'×2 all earnings',     parent:'m1',  branch:'mult',    baseCost:2e3,  costMult:2.2, maxLvl:12, type:'global_mult', val:2,   color:0xf4d03f },
+      { id:'m3', name:'Rainbow Stud',   desc:'×5 all earnings',     parent:'m2',  branch:'mult',    baseCost:50e3, costMult:2.5, maxLvl:10, type:'global_mult', val:5,   color:0xf39c12 },
+      { id:'m4', name:'Cosmic Stud',    desc:'×20 all earnings',    parent:'m3',  branch:'mult',    baseCost:2e6,  costMult:3.0, maxLvl:8,  type:'global_mult', val:20,  color:0xb7950b },
+      { id:'m5', name:'Void Stud',      desc:'×100 all earnings',   parent:'m4',  branch:'mult',    baseCost:100e6,costMult:3.5, maxLvl:6,  type:'global_mult', val:100, color:0x7d6608 },
 
-      // ---- REBIRTH BRANCH (unlocked after 1st rebirth) ----
-      { id:'r1', name:'Rebirth Surge',  desc:'×5 rebirth mult',     parent:null,  branch:'rebirth', baseCost:1,   costMult:3.0, maxLvl:8,  type:'reb_mult',   val:5,    color:0xec407a, requireReb:1 },
-      { id:'r2', name:'Reb. Infinity',  desc:'×10 rebirth mult',    parent:'r1',  branch:'rebirth', baseCost:5,   costMult:3.5, maxLvl:6,  type:'reb_mult',   val:10,   color:0xe91e63, requireReb:1 },
-      { id:'r3', name:'Reb. Auto God',  desc:'+5000 c$/sec perm',   parent:'r1',  branch:'rebirth', baseCost:3,   costMult:3.0, maxLvl:6,  type:'auto_add',   val:5e3,  color:0xc2185b, requireReb:1 },
-      { id:'r4', name:'Reb. Godclick',  desc:'×1000 click mult',    parent:'r2',  branch:'rebirth', baseCost:20,  costMult:4.0, maxLvl:4,  type:'click_mult', val:1000, color:0xad1457, requireReb:2 },
-      { id:'r5', name:'Singularity',    desc:'×∞ all earnings',     parent:'r4',  branch:'rebirth', baseCost:100, costMult:5.0, maxLvl:3,  type:'global_mult',val:1000, color:0x880e4f, requireReb:3 },
+      { id:'m6', name:'Lucky Brick',    desc:'×3 all earnings',     parent:'m1',  branch:'mult',    baseCost:1e3,  costMult:2.0, maxLvl:10, type:'global_mult', val:3,   color:0xf0b27a },
+      { id:'m7', name:'Fortune Brick',  desc:'×10 all earnings',    parent:'m6',  branch:'mult',    baseCost:30e3, costMult:2.5, maxLvl:8,  type:'global_mult', val:10,  color:0xe67e22 },
+      { id:'m8', name:'Destiny Brick',  desc:'×50 all earnings',    parent:'m7',  branch:'mult',    baseCost:2e6,  costMult:3.0, maxLvl:6,  type:'global_mult', val:50,  color:0xca6f1e },
+
+      { id:'m9', name:'Silver Stud',    desc:'×1.2 all earnings',   parent:'m2',  branch:'mult',    baseCost:5e3,  costMult:1.8, maxLvl:20, type:'global_mult', val:1.2, color:0xd5d8dc },
+      { id:'m10',name:'Platinum Stud',  desc:'×2.5 all earnings',   parent:'m9',  branch:'mult',    baseCost:200e3,costMult:2.2, maxLvl:12, type:'global_mult', val:2.5, color:0xaeb6bf },
+      { id:'m11',name:'Obsidian Stud',  desc:'×8 all earnings',     parent:'m10', branch:'mult',    baseCost:5e6,  costMult:2.8, maxLvl:8,  type:'global_mult', val:8,   color:0x85929e },
+      { id:'m12',name:'Nexus Stud',     desc:'×30 all earnings',    parent:'m11', branch:'mult',    baseCost:200e6,costMult:3.2, maxLvl:6,  type:'global_mult', val:30,  color:0x5d6d7e },
+
+      // ══ SPECIAL BRANCH ══
+      { id:'s1', name:'Bigger Brick',   desc:'Brick grows',         parent:'spc', branch:'special', baseCost:500,  costMult:3.0, maxLvl:6,  type:'brick_grow',  val:1,   color:0xd2b4de },
+      { id:'s2', name:'Super Brick',    desc:'Brick grows again',   parent:'s1',  branch:'special', baseCost:20e3, costMult:3.0, maxLvl:4,  type:'brick_grow',  val:1,   color:0xaf7ac5 },
+      { id:'s3', name:'Mega Brick',     desc:'Brick grows again',   parent:'s2',  branch:'special', baseCost:1e6,  costMult:4.0, maxLvl:3,  type:'brick_grow',  val:1,   color:0x9b59b6 },
+      { id:'s4', name:'Brick Aura',     desc:'+10 c$/sec per tile', parent:'s1',  branch:'special', baseCost:5e3,  costMult:2.5, maxLvl:8,  type:'auto_add',    val:10,  color:0x8e44ad },
+      { id:'s5', name:'Brick God',      desc:'×5 all earnings',     parent:'s3',  branch:'special', baseCost:10e6, costMult:4.0, maxLvl:5,  type:'global_mult', val:5,   color:0x7d3c98 },
+      { id:'s6', name:'Brick Hive',     desc:'+100 c$/sec',         parent:'s4',  branch:'special', baseCost:100e3,costMult:2.8, maxLvl:6,  type:'auto_add',    val:100, color:0x6c3483 },
+      { id:'s7', name:'Stud Storm',     desc:'×2 + 50/sec',         parent:'s2',  branch:'special', baseCost:500e3,costMult:3.0, maxLvl:5,  type:'global_mult', val:2,   color:0x4a235a },
+
+      // ══ PRESTIGE BRANCH (floor 1 gated) ══
+      { id:'p1', name:'Pres. Boost',    desc:'×2 prestige mult',    parent:'prs', branch:'prestige',baseCost:1,    costMult:2.5, maxLvl:10, type:'pres_mult',  val:2,    color:0xfef9e7, requirePres:1 },
+      { id:'p2', name:'Pres. Auto',     desc:'+50 c$/sec perm',     parent:'p1',  branch:'prestige',baseCost:5,    costMult:2.0, maxLvl:8,  type:'auto_add',   val:50,   color:0xfcf3cf, requirePres:1 },
+      { id:'p3', name:'Mega Prestige',  desc:'×5 prestige mult',    parent:'p2',  branch:'prestige',baseCost:20,   costMult:3.0, maxLvl:6,  type:'pres_mult',  val:5,    color:0xf9e79f, requirePres:2 },
+      { id:'p4', name:'Pres. Storm',    desc:'×10 click perm',      parent:'p1',  branch:'prestige',baseCost:8,    costMult:2.5, maxLvl:6,  type:'click_mult', val:10,   color:0xf7dc6f, requirePres:2 },
+      { id:'p5', name:'Prestige God',   desc:'×100 prestige mult',  parent:'p3',  branch:'prestige',baseCost:100,  costMult:4.0, maxLvl:4,  type:'pres_mult',  val:100,  color:0xf4d03f, requirePres:5 },
+      { id:'p6', name:'Pres. Surge',    desc:'+500 c$/sec perm',    parent:'p2',  branch:'prestige',baseCost:15,   costMult:2.2, maxLvl:8,  type:'auto_add',   val:500,  color:0xf1c40f, requirePres:2 },
+      { id:'p7', name:'Pres. Nova',     desc:'×20 prestige mult',   parent:'p4',  branch:'prestige',baseCost:50,   costMult:3.5, maxLvl:5,  type:'pres_mult',  val:20,   color:0xd4ac0d, requirePres:3 },
+
+      // ══ REBIRTH BRANCH (floor 2 gated) ══
+      { id:'r1', name:'Reb. Surge',     desc:'×5 rebirth mult',     parent:'reb', branch:'rebirth', baseCost:1,    costMult:3.0, maxLvl:8,  type:'reb_mult',   val:5,    color:0xf1948a, requireReb:1 },
+      { id:'r2', name:'Reb. Infinity',  desc:'×10 rebirth mult',    parent:'r1',  branch:'rebirth', baseCost:5,    costMult:3.5, maxLvl:6,  type:'reb_mult',   val:10,   color:0xec7063, requireReb:1 },
+      { id:'r3', name:'Reb. Auto God',  desc:'+5000 c$/sec perm',   parent:'r1',  branch:'rebirth', baseCost:3,    costMult:3.0, maxLvl:6,  type:'auto_add',   val:5e3,  color:0xe74c3c, requireReb:1 },
+      { id:'r4', name:'Reb. Godclick',  desc:'×1000 click perm',    parent:'r2',  branch:'rebirth', baseCost:20,   costMult:4.0, maxLvl:4,  type:'click_mult', val:1000, color:0xcb4335, requireReb:2 },
+      { id:'r5', name:'Singularity',    desc:'×1000 all earnings',  parent:'r4',  branch:'rebirth', baseCost:100,  costMult:5.0, maxLvl:3,  type:'global_mult',val:1000, color:0xb03a2e, requireReb:3 },
+      { id:'r6', name:'Reb. Storm',     desc:'×50 rebirth mult',    parent:'r2',  branch:'rebirth', baseCost:30,   costMult:4.0, maxLvl:4,  type:'reb_mult',   val:50,   color:0x922b21, requireReb:2 },
+      { id:'r7', name:'Omega Click',    desc:'×10000 click perm',   parent:'r4',  branch:'rebirth', baseCost:500,  costMult:6.0, maxLvl:3,  type:'click_mult', val:10000,color:0x7b241c, requireReb:3 },
     ];
 
     // ================================================================
@@ -353,6 +377,54 @@
       }
     }
 
+    // ---- Floor 1 & 2 platforms + teleporter pads ----
+    function makeFloorPlatform(y, color) {
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+      const fl = new THREE.Mesh(new THREE.BoxGeometry(40, 0.4, 40), mat);
+      fl.position.set(0, y - 0.2, -10);
+      fl.receiveShadow = true;
+      scene.add(fl);
+      // Stud grid
+      const sg = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12);
+      const sm = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).offsetHSL(0, 0, 0.05), roughness: 0.8 });
+      for (let x = -18; x <= 18; x += 1.2) for (let z = -30; z <= 10; z += 1.2) {
+        const s = new THREE.Mesh(sg, sm);
+        s.position.set(x, y + 0.025, z);
+        scene.add(s);
+      }
+    }
+    makeFloorPlatform(7,  0x1a3a6a); // Floor 1 — blue
+    makeFloorPlatform(14, 0x3a1a5a); // Floor 2 — purple
+
+    // Teleporter pads — glow bricks that move player between floors
+    const teleporters = [];
+    function makeTeleporter(x, fromY, toY, label, color) {
+      const geo = new THREE.BoxGeometry(0.6, 0.1, 0.6);
+      const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, fromY + 0.05, 3);
+      scene.add(mesh);
+      // Label
+      const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#' + color.toString(16).padStart(6,'0');
+      ctx.fillRect(0,0,256,64);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 22px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(label, 128, 40);
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.55, 0.14),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true })
+      );
+      plane.position.set(x, fromY + 0.22, 3);
+      plane.rotation.x = -0.4;
+      scene.add(plane);
+      teleporters.push({ mesh, toY });
+    }
+    makeTeleporter(-2, 0,  7,  '▲ Floor 2', 0x2196f3);
+    makeTeleporter(-2, 7,  0,  '▼ Floor 1', 0x1565c0);
+    makeTeleporter( 2, 7,  14, '▲ Floor 3', 0x9c27b0);
+    makeTeleporter( 2, 14, 7,  '▼ Floor 2', 0x6a1b9a);
+
     // ================================================================
     // BRICK BUILDER
     // ================================================================
@@ -403,36 +475,35 @@
     // Siblings are spread along Z.
 
     const DEPTH_SPACING = 1.9;   // grows along -Z (forward from player)
-    const VERT_SPACING  = 0.9;   // spreads along X
-    const BRANCH_OFFSETS = { click: -4, auto: 0, mult: 4, special: 8, prestige: -8, rebirth: 12 };
+    const VERT_SPACING  = 1.0;   // spreads along X
+    // Floor Y offsets per branch group
+    const BRANCH_FLOOR = { root:0, click:0, auto:0, mult:0, special:0, prestige:7, rebirth:14 };
+    const BRANCH_OFFSETS = { root:0, click:-5, auto:-1.5, mult:2, special:5.5, prestige:0, rebirth:0 };
 
     function buildPositions() {
-      // BFS to assign grid positions
-      const pos = {}; // id -> {x, z}
-      const roots = TREE_DEF.filter(u => !u.parent);
+      const pos = {}; // id -> {x, y, z}
       const byParent = {};
       TREE_DEF.forEach(u => {
-        if (!byParent[u.parent]) byParent[u.parent] = [];
-        byParent[u.parent].push(u);
+        const key = u.parent || '__root__';
+        if (!byParent[key]) byParent[key] = [];
+        byParent[key].push(u);
       });
 
       function place(u, depth, xBase) {
-        // Tree grows along -Z, branches spread along X
-        const z = -(depth * DEPTH_SPACING + 2.5);
+        const floorY = BRANCH_FLOOR[u.branch] || 0;
+        const z = -(depth * DEPTH_SPACING + (u.id === 'root' ? 0 : 2.5));
         const children = byParent[u.id] || [];
         const totalW = Math.max(0, children.length - 1) * VERT_SPACING;
         let xOff = xBase - totalW / 2;
-        pos[u.id] = { x: xBase, z };
+        pos[u.id] = { x: xBase, y: floorY, z };
         children.forEach((c, i) => {
           place(c, depth + 1, xOff + i * VERT_SPACING);
         });
       }
 
-      // Place each root branch
-      roots.forEach(u => {
-        const xBase = BRANCH_OFFSETS[u.branch] || 0;
-        place(u, 0, xBase);
-      });
+      // Single root at origin, then fan out
+      const root = TREE_DEF.find(u => u.id === 'root');
+      place(root, 0, 0);
       return pos;
     }
 
@@ -486,7 +557,7 @@
         if (!p) return;
 
         const group = makeBrick(1, 1, u.color, true);
-        group.position.set(p.x, BRICK_H * 0.55 / 2, p.z);
+        group.position.set(p.x, p.y + BRICK_H * 0.55 / 2, p.z);
         group.rotation.y = Math.random() * 0.3 - 0.15;
 
         // Label plane
@@ -658,6 +729,7 @@
     }
 
     function buyUpgrade(u) {
+      if (u.type === 'none') return; // hub/trunk nodes not purchasable
       if (!isUnlocked(u)) return;
       const cost = upgCost(u);
       if (cash < cost || levels[u.id] >= u.maxLvl) return;
@@ -874,6 +946,19 @@
 
       // Idle brick rotation when not in VR
       if (!renderer.xr.isPresenting && brickGroup) brickGroup.rotation.y += dt * 0.5;
+
+      // Teleporter pads — step on to travel between floors
+      const px = player.position.x, pz = player.position.z, py = player.position.y;
+      for (const tp of teleporters) {
+        const dx = px - tp.mesh.position.x, dz = pz - tp.mesh.position.z;
+        const onPad = Math.abs(dx) < 0.5 && Math.abs(dz) < 0.5
+          && Math.abs(py - tp.mesh.position.y) < 1.5;
+        if (onPad) { player.position.y = tp.toY; break; }
+      }
+      // Pulse teleporter glow
+      teleporters.forEach(tp => {
+        tp.mesh.material.emissiveIntensity = 0.4 + Math.sin(Date.now() * 0.004) * 0.3;
+      });
 
       // Auto income
       autoAccum += dt;
