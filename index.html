@@ -613,7 +613,7 @@
     const BRANCH_OFFSETS = { root:0, click:-5, auto:-1.5, mult:2, special:5.5, prestige:0, rebirth:0 };
 
     function buildPositions() {
-      const pos = {}; // id -> {x, y, z}
+      const pos = {};
       const byParent = {};
       TREE_DEF.forEach(u => {
         const key = u.parent || '__root__';
@@ -621,21 +621,33 @@
         byParent[key].push(u);
       });
 
-      function place(u, depth, xBase) {
+      // 1. Compute the leaf-count of each subtree (used as its width)
+      function subtreeWidth(u) {
+        const children = byParent[u.id] || [];
+        if (children.length === 0) return 1;
+        return children.reduce((sum, c) => sum + subtreeWidth(c), 0);
+      }
+
+      // 2. Place nodes: x spreads by subtree width, z grows with depth
+      function place(u, depth, xLeft) {
         const floorY = BRANCH_FLOOR[u.branch] || 0;
         const z = -(depth * DEPTH_SPACING + (u.id === 'root' ? 0 : 2.5));
         const children = byParent[u.id] || [];
-        const totalW = Math.max(0, children.length - 1) * VERT_SPACING;
-        let xOff = xBase - totalW / 2;
-        pos[u.id] = { x: xBase, y: floorY, z };
-        children.forEach((c, i) => {
-          place(c, depth + 1, xOff + i * VERT_SPACING);
+        const w = subtreeWidth(u);
+        const xCenter = xLeft + w / 2;
+        pos[u.id] = { x: xCenter * VERT_SPACING, y: floorY, z };
+
+        let cursor = xLeft;
+        children.forEach(c => {
+          const cw = subtreeWidth(c);
+          place(c, depth + 1, cursor);
+          cursor += cw;
         });
       }
 
-      // Single root at origin, then fan out
       const root = TREE_DEF.find(u => u.id === 'root');
-      place(root, 0, 0);
+      const rootWidth = subtreeWidth(root);
+      place(root, 0, -rootWidth / 2); // center the whole tree at x=0
       return pos;
     }
 
