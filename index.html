@@ -511,19 +511,22 @@
         metalness: 0.05
       });
 
-      // Create stepped pyramid mountain
+      // Create stepped pyramid mountain matching node heights
       for (let layer = 0; layer < 10; layer++) {
-        const layerWidth = 20 - layer * 2;
+        const layerWidth = 25 - layer * 2.5;
         const layerY = layer * blockSize;
-        const layerZ = -16 - layer * 0.5;
+        const layerZ = -16 - layer * 2.5; // match tree depth
 
+        // Create full layer with multiple blocks along z
         for (let x = -layerWidth / 2; x < layerWidth / 2; x += blockSize) {
-          const blockGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
-          const block = new THREE.Mesh(blockGeo, mountainMat);
-          block.position.set(x, layerY, layerZ);
-          block.castShadow = true;
-          block.receiveShadow = true;
-          mountainGroup.add(block);
+          for (let z = 0; z < 3; z++) {
+            const blockGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+            const block = new THREE.Mesh(blockGeo, mountainMat);
+            block.position.set(x, layerY, layerZ - z * blockSize);
+            block.castShadow = true;
+            block.receiveShadow = true;
+            mountainGroup.add(block);
+          }
         }
       }
 
@@ -1110,9 +1113,10 @@
 
     // Mountain height at z position (for nodes on mountain to climb)
     function mountainHeightAt(z) {
-      const relZ = Math.max(0, z + 16); // mountain base at z=-16
-      const peak = 7 + (14 - 7) * Math.max(0, 1 - relZ / 20); // climb from y=7 to 14
-      return Math.max(0, peak);
+      // Mountain goes from z=-16 backwards, climbing from y=0 to y=10
+      const relZ = Math.max(0, z + 16); // distance from mountain base
+      const heightFraction = Math.max(0, 1 - relZ / 25); // climb over 25 units
+      return heightFraction * 10; // peak at y=10
     }
 
     // Called every frame regardless of platform
