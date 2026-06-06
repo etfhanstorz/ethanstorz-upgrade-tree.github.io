@@ -351,6 +351,8 @@
       refreshTree();
     }
     window.doPrestige = doPrestige;
+    // Console cheat: type giveCash() to get 9,999,999 c$
+    window.giveCash = () => { cash += 9999999; totalEarned += 9999999; updateAll(); console.log('💰 +9,999,999 c$'); };
     window.doRebirth  = doRebirth;
 
     // ================================================================
