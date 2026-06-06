@@ -41,32 +41,52 @@
     /* ---- Upgrade panel ---- */
     #panel {
       position: fixed; top: 50%; right: 14px; transform: translateY(-50%);
-      width: 200px; display: flex; flex-direction: column; gap: 7px;
-      background: rgba(10,10,24,.8); backdrop-filter: blur(14px);
+      width: 178px; display: flex; flex-direction: column; gap: 10px;
+      background: rgba(10,10,24,.7); backdrop-filter: blur(14px);
       border: 1px solid rgba(255,255,255,.1); border-radius: 16px;
       padding: 14px 11px; z-index: 10; max-height: 90vh; overflow-y: auto;
     }
     #panel .p-title {
       font-size: 11px; font-weight: 800; letter-spacing: .1em;
       text-transform: uppercase; color: rgba(255,255,255,.35);
-      text-align: center; margin-bottom: 4px;
+      text-align: center; margin-bottom: 2px;
     }
+
+    /* Lego-brick-style upgrade button */
     .upg-btn {
-      all: unset; cursor: pointer; border-radius: 10px;
-      padding: 9px 10px; display: flex; flex-direction: column; gap: 3px;
-      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09);
-      transition: background .15s, transform .1s, opacity .2s;
+      all: unset; cursor: pointer; display: block; width: 100%;
+      position: relative; transition: transform .1s, opacity .2s;
     }
-    .upg-btn:hover:not(:disabled)  { background: rgba(255,255,255,.12); }
-    .upg-btn:active:not(:disabled) { transform: scale(.97); }
-    .upg-btn:disabled, .upg-btn.locked { opacity: .4; cursor: default; }
-    .upg-btn .u-name { font-size: 13px; font-weight: 700; color: #fff; }
-    .upg-btn .u-desc { font-size: 10px; color: rgba(255,255,255,.45); }
-    .upg-btn .u-cost {
-      font-size: 12px; font-weight: 800; color: #f5d020;
-      margin-top: 2px;
+    .upg-btn:active:not([disabled]) { transform: scale(.96); }
+    .upg-btn[disabled] { opacity: .38; cursor: default; }
+
+    /* The brick body */
+    .upg-brick {
+      width: 100%; border-radius: 6px;
+      padding: 9px 10px 11px;
+      display: flex; flex-direction: column; gap: 2px;
+      position: relative; overflow: hidden;
+      box-shadow: 0 4px 0 rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.18);
+      transition: filter .12s;
     }
-    .upg-btn .u-level { font-size: 10px; color: rgba(255,255,255,.3); float: right; }
+    .upg-btn:hover:not([disabled]) .upg-brick { filter: brightness(1.18); }
+
+    /* Stud row across the top of each brick */
+    .upg-studs {
+      display: flex; gap: 5px; margin-bottom: 5px;
+    }
+    .upg-stud {
+      width: 14px; height: 7px; border-radius: 50% / 40%;
+      background: rgba(255,255,255,.22);
+      box-shadow: 0 2px 0 rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.25);
+      flex-shrink: 0;
+    }
+
+    .upg-btn .u-name { font-size: 12px; font-weight: 800; color: #fff; line-height: 1.2; }
+    .upg-btn .u-desc { font-size: 9px;  color: rgba(255,255,255,.55); margin-top: 1px; }
+    .upg-btn .u-row  { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; }
+    .upg-btn .u-cost { font-size: 12px; font-weight: 800; color: #f5d020; }
+    .upg-btn .u-level { font-size: 9px; color: rgba(255,255,255,.4); }
 
     /* ---- PC crosshair ---- */
     #crosshair {
@@ -332,14 +352,31 @@
       });
     }
 
+    const BRICK_BG = [
+      '#c0392b','#2980b9','#27ae60','#d35400','#8e44ad','#16a085','#2c3e50','#7f8c8d'
+    ];
+
     function buildUpgradePanel() {
-      upgrades.forEach(u => {
+      upgrades.forEach((u, i) => {
         const btn = document.createElement('button');
         btn.className = 'upg-btn';
+        const bg = BRICK_BG[i % BRICK_BG.length];
+        const dark = bg; // shadow handled by CSS
         btn.innerHTML = `
-          <div class="u-name">${u.name} <span class="u-level"></span></div>
-          <div class="u-desc">${u.desc}</div>
-          <div class="u-cost"></div>
+          <div class="upg-brick" style="background:${bg}">
+            <div class="upg-studs">
+              <div class="upg-stud"></div>
+              <div class="upg-stud"></div>
+              <div class="upg-stud"></div>
+              <div class="upg-stud"></div>
+            </div>
+            <div class="u-name">${u.name}</div>
+            <div class="u-desc">${u.desc}</div>
+            <div class="u-row">
+              <span class="u-cost"></span>
+              <span class="u-level"></span>
+            </div>
+          </div>
         `;
         btn.addEventListener('click', () => {
           const cost = upgCost(u);
