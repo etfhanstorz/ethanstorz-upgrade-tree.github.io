@@ -227,6 +227,7 @@
     // level map: id -> level bought
     const levels = {};
     TREE_DEF.forEach(u => { levels[u.id] = 0; });
+    levels['root'] = 1; // root is always "bought" so tier-1 hubs unlock immediately
 
     // ================================================================
     // ECONOMY HELPERS
@@ -329,6 +330,7 @@
       cash = 0; totalEarned = 0;
       TREE_DEF.filter(u => u.branch !== 'prestige' && u.branch !== 'rebirth')
         .forEach(u => { levels[u.id] = 0; });
+      levels['root'] = 1; // always keep root bought
       brickCols = 2; brickRows = 2; brickColorIndex = 0;
       rebuildBrick();
       updateAll();
@@ -341,6 +343,7 @@
       rebirthTokens++;
       cash = 0; totalEarned = 0; prestigeCount = 0; prestigePts = 0;
       TREE_DEF.filter(u => u.branch !== 'rebirth').forEach(u => { levels[u.id] = 0; });
+      levels['root'] = 1; // always keep root bought
       brickCols = 2; brickRows = 2; brickColorIndex = 0;
       rebuildBrick();
       updateAll();
