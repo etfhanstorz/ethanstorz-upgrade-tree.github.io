@@ -1151,6 +1151,14 @@
         const ax = src.gamepad.axes;
         const x = ax.length > 2 ? ax[2] : ax[0];
         const y = ax.length > 3 ? ax[3] : ax[1];
+        const btns = src.gamepad.buttons;
+
+        // Jump on grip button (button 4 & 5 are left/right grip)
+        const gripBtn = src.handedness === 'left' ? btns[4] : btns[5];
+        if (gripBtn && gripBtn.pressed && onGround) {
+          playerVel.y = 6;
+        }
+
         if (src.handedness === 'left') {
           if (Math.abs(x) < DEAD && Math.abs(y) < DEAD) continue;
           camera.getWorldQuaternion(headQ);
