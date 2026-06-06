@@ -227,7 +227,8 @@
     // level map: id -> level bought
     const levels = {};
     TREE_DEF.forEach(u => { levels[u.id] = 0; });
-    levels['root'] = 1; // root is always "bought" so tier-1 hubs unlock immediately
+    // Non-purchasable connector nodes are always "bought" so their children unlock
+    TREE_DEF.filter(u => u.type === 'none').forEach(u => { levels[u.id] = 1; });
 
     // ================================================================
     // ECONOMY HELPERS
@@ -330,7 +331,7 @@
       cash = 0; totalEarned = 0;
       TREE_DEF.filter(u => u.branch !== 'prestige' && u.branch !== 'rebirth')
         .forEach(u => { levels[u.id] = 0; });
-      levels['root'] = 1; // always keep root bought
+      TREE_DEF.filter(u => u.type === 'none').forEach(u => { levels[u.id] = 1; });
       brickCols = 2; brickRows = 2; brickColorIndex = 0;
       rebuildBrick();
       updateAll();
@@ -343,7 +344,7 @@
       rebirthTokens++;
       cash = 0; totalEarned = 0; prestigeCount = 0; prestigePts = 0;
       TREE_DEF.filter(u => u.branch !== 'rebirth').forEach(u => { levels[u.id] = 0; });
-      levels['root'] = 1; // always keep root bought
+      TREE_DEF.filter(u => u.type === 'none').forEach(u => { levels[u.id] = 1; });
       brickCols = 2; brickRows = 2; brickColorIndex = 0;
       rebuildBrick();
       updateAll();
@@ -373,6 +374,8 @@
         Object.assign(levels, d.levels || {});
         brickCols = d.brickCols || 2; brickRows = d.brickRows || 2;
         brickColorIndex = d.brickColorIndex || 0;
+        // Connector nodes always stay at 1
+        TREE_DEF.filter(u => u.type === 'none').forEach(u => { levels[u.id] = 1; });
         // Restore hit milestones so we don't re-fire them on load
         MILESTONES.forEach(m => { if (totalEarned >= m) hitMilestones.add(m); });
         rebuildBrick();
